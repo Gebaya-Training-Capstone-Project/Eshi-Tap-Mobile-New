@@ -1,0 +1,13 @@
+abstract class Failure {
+  final String message;
+  
+  const Failure({required this.message});
+}
+
+class ServerFailure extends Failure {
+  const ServerFailure({required String message}) : super(message: message);
+}
+
+class NetworkFailure extends Failure {
+  const NetworkFailure({required String message}) : super(message: message);
+}

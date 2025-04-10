@@ -7,7 +7,7 @@ class UserModel {
   final String phone;
   final String address;
   final String role;
-  final String profile;
+  final String profile = 'Nebil';
   final String? token;
 
   UserModel({
@@ -17,7 +17,7 @@ class UserModel {
     required this.phone,
     required this.address,
     required this.role,
-    required this.profile,
+    
     this.token,
   });
 
@@ -29,7 +29,7 @@ class UserModel {
       phone: map['phone'] as String,
       address: map['address'] as String,
       role: map['role'] as String,
-      profile: map['profile'] as String,
+      
       token: map['token'] as String?,
     );
   }

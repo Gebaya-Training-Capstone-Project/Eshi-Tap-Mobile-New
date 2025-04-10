@@ -1,3 +1,4 @@
+import 'package:eshi_tap/common/widgets/main_tab_view.dart';
 import 'package:eshi_tap/features/Auth/presentation/bloc/auth_bloc.dart';
 import 'package:eshi_tap/splash_screen.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +21,8 @@ class MyApp extends StatelessWidget {
       create: (_) => di.sl<AuthBloc>(),
       child: const MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: SplashPage(),
+        home: SplashPage(), // Use SplashScreen as the initial screen
+        // home: MainTabView(),
       ),
     );
   }

@@ -4,10 +4,14 @@ import 'package:eshi_tap/features/Auth/presentation/bloc/auth_bloc.dart';
 import 'package:eshi_tap/features/Restuarant/domain/usecase/get_restaurants.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/bloc/restaurant_bloc.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/home_page.dart';
+import 'package:eshi_tap/features/Restuarant/presentation/meal_page.dart';
 import 'package:eshi_tap/injection_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:eshi_tap/common/widgets/tab_button.dart';
+
+
 
 class MainTabView extends StatefulWidget {
   const MainTabView({super.key});
@@ -78,7 +82,7 @@ class _MainTabViewState extends State<MainTabView> {
                 onTap: () {
                   if (selctTab != 0) {
                     selctTab = 0;
-                    selectPageView = const Center(child: Text('Menu Page'));
+                    selectPageView = const MealPage();
                   }
                   if (mounted) {
                     setState(() {});

@@ -1,11 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:eshi_tap/features/Auth/data/models/user.dart';
+import 'package:logger/logger.dart';
 import '../models/signin_req_params.dart';
 import '../models/signup_req_params.dart';
 
 
 class AuthRemoteDataSource {
   final Dio dio;
+  final logger = Logger();
   static const baseUrl = 'https://eshi-tap.vercel.app/api';
 
   AuthRemoteDataSource(this.dio);
@@ -16,7 +18,7 @@ class AuthRemoteDataSource {
         '$baseUrl/user/create',
         data: params.toJson(),
       );
-      if (response.statusCode == 200) {
+      if (response.statusCode == 201) {
         return UserModel.fromMap(response.data['data']);
       }
       throw Exception('Registration failed: ${response.data['message']}');
@@ -32,6 +34,7 @@ class AuthRemoteDataSource {
         data: params.toMap(),
       );
       if (response.statusCode == 200) {
+        logger.d('Login response: ${response.data}');
         return UserModel.fromMap(response.data['data']);
       }
       throw Exception('Login failed: ${response.data['message']}');

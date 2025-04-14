@@ -48,11 +48,11 @@ jobs:
           VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //')
           VERSION_TAG=${VERSION%-*}
           echo "VERSION=$VERSION_TAG" >> $GITHUB_ENV
-          echo "::set-output name=version::$VERSION_TAG"
+          echo "version=$VERSION_TAG" >> $GITHUB_OUTPUT
 
       - name: 🌍 Set Build Environment
         id: set-env
-        run: echo "::set-output name=environment::Staging"
+        run: echo "environment=Staging" >> $GITHUB_OUTPUT
 
       - name: 📦 Install Dependencies
         run: flutter pub get
@@ -82,6 +82,9 @@ jobs:
           name: flutter-web-build
           path: build/web
 
+      - name: 📜 List Downloaded Files
+        run: ls -R build/web
+
       - name: 🎯 Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -89,6 +92,7 @@ jobs:
           firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
           projectId: "eshi-tap-project"
           channelId: "live"
+          expires: "1d"
 
       - name: 🚀 Notify Team on Telegram
         uses: appleboy/telegram-action@master

@@ -1,5 +1,3 @@
-
-
 import 'package:eshi_tap/features/Restuarant/domain/entity/meal.dart';
 
 class MealModel {
@@ -19,6 +17,9 @@ class MealModel {
   final List<Ingredient>? ingredients;
   final double? deliveryFee;
   final bool? isFavorited;
+  final List<String>? categories;
+  final int? estimatedDeliveryTime;
+  final List<String>? allergens; // New field for allergens
 
   MealModel({
     required this.id,
@@ -37,13 +38,16 @@ class MealModel {
     this.ingredients,
     this.deliveryFee,
     this.isFavorited,
+    this.categories,
+    this.estimatedDeliveryTime,
+    this.allergens,
   });
 
   factory MealModel.fromJson(Map<String, dynamic> json) {
     return MealModel(
       id: json['_id'] as String,
       name: json['name'] as String,
-      category: json['category'] as String?, // New field
+      category: json['category'] as String?,
       price: (json['price'] as num).toDouble(),
       currency: json['currency'] as String,
       images: (json['images'] as List)
@@ -68,7 +72,7 @@ class MealModel {
             name: addon['name'] as String,
             price: (addon['price'] as num).toDouble(),
             isRequired: addon['isRequired'] as bool?,
-            image: addon['image'] as String?, // New field
+            image: addon['image'] as String?,
           )).toList(),
       ingredients: (json['ingredients'] as List?)?.map((ingredient) {
         if (ingredient is String) {
@@ -76,13 +80,16 @@ class MealModel {
         }
         return Ingredient(
           name: ingredient['name'] as String,
-          icon: ingredient['icon'] as String?, // New field
+          icon: ingredient['icon'] as String?,
         );
       }).toList(),
       deliveryFee: json['deliveryFee'] != null
           ? (json['deliveryFee'] as num).toDouble()
-          : null, // New field
-      isFavorited: json['isFavorited'] as bool?, // New field
+          : null,
+      isFavorited: json['isFavorited'] as bool?,
+      categories: (json['categories'] as List?)?.cast<String>(),
+      estimatedDeliveryTime: json['estimatedDeliveryTime'] as int?,
+      allergens: (json['allergens'] as List?)?.cast<String>(), // New field
     );
   }
 }
@@ -106,6 +113,9 @@ extension MealModelX on MealModel {
       ingredients: ingredients,
       deliveryFee: deliveryFee,
       isFavorited: isFavorited,
+      categories: categories,
+      estimatedDeliveryTime: estimatedDeliveryTime,
+      allergens: allergens,
     );
   }
 }

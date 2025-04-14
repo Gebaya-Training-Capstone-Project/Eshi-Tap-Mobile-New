@@ -2,6 +2,7 @@ import 'package:eshi_tap/common/widgets/main_tab_view.dart';
 import 'package:eshi_tap/core/configs/theme/color_extensions.dart';
 import 'package:eshi_tap/features/Auth/presentation/auth/pages/signin.dart';
 import 'package:eshi_tap/features/Auth/presentation/bloc/auth_bloc.dart';
+import 'package:eshi_tap/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -35,7 +36,7 @@ class _SplashPageState extends State<SplashPage> {
             } else if (state is AuthUnauthenticated || state is AuthError) {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => SigninPage()),
+                MaterialPageRoute(builder: (context) => OnboardingPage()),
               );
             }
           });

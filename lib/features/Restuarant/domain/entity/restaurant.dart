@@ -1,3 +1,7 @@
+
+
+import 'package:eshi_tap/features/Restuarant/domain/entity/meal.dart';
+
 class RestaurantImage {
   final String secureUrl;
   final String publicId;
@@ -21,6 +25,8 @@ class Restaurant {
   final bool status;
   final String createdAt;
   final String updatedAt;
+  final String userId;
+  final List<Meal>? meals; // New field for meals
 
   Restaurant({
     required this.id,
@@ -33,5 +39,7 @@ class Restaurant {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    required this.userId,
+    this.meals,
   });
 }

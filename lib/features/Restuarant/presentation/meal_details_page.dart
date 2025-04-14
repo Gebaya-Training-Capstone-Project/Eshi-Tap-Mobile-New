@@ -2,7 +2,6 @@ import 'package:eshi_tap/core/configs/theme/color_extensions.dart';
 import 'package:eshi_tap/features/Restuarant/domain/entity/meal.dart';
 import 'package:flutter/material.dart';
 
-
 class MealDetailsPage extends StatefulWidget {
   final Meal meal;
 
@@ -14,15 +13,53 @@ class MealDetailsPage extends StatefulWidget {
 
 class _MealDetailsPageState extends State<MealDetailsPage> {
   int quantity = 1;
-  int addOnQuantity = 0;
   final Map<String, bool> selectedAddOns = {};
+  final Map<String, int> addOnQuantities = {};
+
+  // Local mapping of add-on names to icons
+  final Map<String, IconData> addOnIcons = {
+    'Side Salad': Icons.local_dining,
+    'Lemon Butter Sauce': Icons.local_bar,
+    'Extra Hummus': Icons.local_dining,
+    'Extra Rice': Icons.rice_bowl,
+    'Extra Sauce': Icons.local_bar,
+  };
+
+  // Default icon for add-ons without a specific icon
+  final IconData defaultAddOnIcon = Icons.fastfood;
+
+  // Local mapping of ingredient names to icons
+  final Map<String, IconData> ingredientIcons = {
+    'salmon': Icons.set_meal,
+    'rosemary': Icons.local_florist,
+    'thyme': Icons.local_florist,
+    'garlic': Icons.local_dining,
+    'butter': Icons.local_dining,
+    'potatoes': Icons.local_dining,
+    'green beans': Icons.local_dining,
+    'quinoa': Icons.rice_bowl,
+    'avocado': Icons.local_dining,
+    'chickpeas': Icons.local_dining,
+    'spinach': Icons.local_dining,
+    'carrots': Icons.local_dining,
+    'chicken': Icons.local_dining,
+    'tomato': Icons.local_dining,
+    'onion': Icons.local_dining,
+    'spices': Icons.local_dining,
+    'salt': Icons.local_dining,
+    'peppers': Icons.local_dining,
+  };
+
+  // Default icon for ingredients without a specific icon
+  final IconData defaultIngredientIcon = Icons.local_dining;
 
   @override
   void initState() {
     super.initState();
-    // Initialize add-ons selection
+    // Initialize add-ons selection and quantities
     for (var addon in widget.meal.addons ?? []) {
       selectedAddOns[addon.name] = addon.isRequired ?? false;
+      addOnQuantities[addon.name] = addon.isRequired ?? false ? 1 : 0;
     }
   }
 
@@ -33,13 +70,21 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
       orElse: () => widget.meal.images.first,
     );
 
-    // Calculate total price
+    // Calculate prices
     double basePrice = widget.meal.price * quantity;
     double addOnPrice = widget.meal.addons
             ?.where((addon) => selectedAddOns[addon.name] == true)
-            .fold(0.0, (sum, addon) => sum! + (addon.price * addOnQuantity)) ??
+            .fold<double>(
+                0.0,
+                (sum, addon) =>
+                    sum + (addon.price * (addOnQuantities[addon.name] ?? 0))) ??
         0.0;
     double totalPrice = basePrice + addOnPrice;
+
+    // Get selected add-ons for display in the bottom bar
+    final selectedAddOnsList = widget.meal.addons
+        ?.where((addon) => selectedAddOns[addon.name] == true)
+        .toList();
 
     return Scaffold(
       body: CustomScrollView(
@@ -66,7 +111,8 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
                 child: Image.network(
                   defaultImage.secureUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.error),
                 ),
               ),
             ),
@@ -87,7 +133,7 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
                   // Name
                   Text(
                     widget.meal.name,
-                    style:  TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
                       color: AppColor.primaryTextColor,
@@ -124,7 +170,7 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
                             size: 16,
                           ),
                           const SizedBox(width: 2),
-                           Text(
+                          Text(
                             '80 birr', // Hardcoded until backend provides deliveryFee
                             style: TextStyle(
                               color: AppColor.secondoryColor,
@@ -230,7 +276,7 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
                   ),
                   const SizedBox(height: 16),
                   // Add-Ons
-                   Text(
+                  Text(
                     'ADD ONS',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
@@ -241,32 +287,53 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
                   const SizedBox(height: 8),
                   if (widget.meal.addons != null && widget.meal.addons!.isNotEmpty)
                     ...widget.meal.addons!.map((addon) {
-                      return CheckboxListTile(
-                        value: selectedAddOns[addon.name] ?? false,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedAddOns[addon.name] = value ?? false;
-                          });
-                        },
-                        title: Text(addon.name),
-                        subtitle: Text('${addon.price} ${widget.meal.currency}'),
-                        secondary: addon.image != null
-                            ? Image.network(
-                                addon.image!,
-                                width: 40,
-                                height: 40,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.fastfood),
-                              )
-                            : const Icon(Icons.fastfood),
-                        controlAffinity: ListTileControlAffinity.trailing,
+                      final isRequired = addon.isRequired ?? false;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: selectedAddOns[addon.name] == true
+                                ? AppColor.primaryColor
+                                : Colors.grey[300]!,
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: CheckboxListTile(
+                          value: selectedAddOns[addon.name] ?? false,
+                          onChanged: isRequired
+                              ? null // Disable interaction if required
+                              : (value) {
+                                  setState(() {
+                                    selectedAddOns[addon.name] = value ?? false;
+                                    addOnQuantities[addon.name] =
+                                        value ?? false ? 1 : 0;
+                                  });
+                                },
+                          title: Text(addon.name),
+                          subtitle: Text(
+                            '${addon.price.toStringAsFixed(0)} ${widget.meal.currency}',
+                            style: TextStyle(
+                              color: AppColor.subTextColor,
+                              fontSize: 12,
+                            ),
+                          ),
+                          secondary: Icon(
+                            addOnIcons[addon.name] ?? defaultAddOnIcon,
+                            color: AppColor.primaryColor,
+                            size: 30,
+                          ),
+                          activeColor: AppColor.primaryColor,
+                          controlAffinity: ListTileControlAffinity.trailing,
+                          dense: true,
+                        ),
                       );
                     }).toList()
                   else
                     const Text('No add-ons available'),
                   const SizedBox(height: 16),
                   // Ingredients
-                   Text(
+                  Text(
                     'INGREDIENTS',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
@@ -275,22 +342,47 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  if (widget.meal.ingredients != null && widget.meal.ingredients!.isNotEmpty)
+                  if (widget.meal.ingredients != null &&
+                      widget.meal.ingredients!.isNotEmpty)
                     Wrap(
-                      spacing: 8,
+                      spacing: 12,
                       runSpacing: 8,
+                      alignment: WrapAlignment.start,
                       children: widget.meal.ingredients!.map((ingredient) {
-                        return Chip(
-                          label: Text(ingredient.name), // Use ingredient.name instead of ingredient
-                          avatar: ingredient.icon != null
-                              ? Image.network(
-                                  ingredient.icon!,
-                                  width: 24,
-                                  height: 24,
-                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.local_dining),
-                                )
-                              : const Icon(Icons.local_dining),
-                          backgroundColor: Colors.grey[200],
+                        final isAllergen = widget.meal.allergens?.contains(ingredient.name.toLowerCase()) ?? false;
+                        return Column(
+                          children: [
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.grey[200],
+                              ),
+                              child: Icon(
+                                ingredientIcons[ingredient.name.toLowerCase()] ??
+                                    defaultIngredientIcon,
+                                color: AppColor.primaryTextColor,
+                                size: 30,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              ingredient.name,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColor.primaryTextColor,
+                              ),
+                            ),
+                            if (isAllergen)
+                              Text(
+                                '(Allergy)',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColor.subTextColor,
+                                ),
+                              ),
+                          ],
                         );
                       }).toList(),
                     )
@@ -305,72 +397,137 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
+            // Display selected add-ons with quantities
+            if (selectedAddOnsList != null && selectedAddOnsList.isNotEmpty)
+              ...selectedAddOnsList.map((addon) {
+                return Row(
+                  children: [
+                    // Add-on icon
+                    Icon(
+                      addOnIcons[addon.name] ?? defaultAddOnIcon,
+                      size: 30,
+                      color: AppColor.primaryTextColor,
+                    ),
+                    const SizedBox(width: 8),
+                    // Add-on name and price
+                    Expanded(
+                      child: Text(
+                        '${addon.name} ${addon.price.toStringAsFixed(0)}${widget.meal.currency}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: AppColor.primaryTextColor,
+                        ),
+                      ),
+                    ),
+                    // Quantity controls for add-on
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle,
+                              color: Colors.redAccent),
+                          onPressed: addOnQuantities[addon.name]! > 0
+                              ? () {
+                                  setState(() {
+                                    addOnQuantities[addon.name] =
+                                        addOnQuantities[addon.name]! - 1;
+                                    if (addOnQuantities[addon.name] == 0 &&
+                                        !(addon.isRequired ?? false)) {
+                                      selectedAddOns[addon.name] = false;
+                                    }
+                                  });
+                                }
+                              : null,
+                        ),
+                        Text(
+                          '${addOnQuantities[addon.name]}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle,
+                              color: Colors.green),
+                          onPressed: () {
+                            setState(() {
+                              addOnQuantities[addon.name] =
+                                  addOnQuantities[addon.name]! + 1;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              }).toList(),
+            const SizedBox(height: 8),
+            // Base price and quantity controls
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
                     '${basePrice.toStringAsFixed(0)}${widget.meal.currency}',
-                    style:  TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: AppColor.primaryTextColor,
                     ),
                   ),
-                  if (addOnPrice > 0)
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle,
+                          color: Colors.redAccent),
+                      onPressed: () {
+                        setState(() {
+                          if (quantity > 1) quantity--;
+                        });
+                      },
+                    ),
                     Text(
-                      '${addOnPrice.toStringAsFixed(0)}${widget.meal.currency}',
-                      style: TextStyle(
-                        color: AppColor.subTextColor,
-                        fontSize: 14,
+                      '$quantity',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                ],
-              ),
-            ),
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.remove_circle, color: Colors.red),
-                  onPressed: () {
-                    setState(() {
-                      if (quantity > 1) quantity--;
-                    });
-                  },
+                    IconButton(
+                      icon: const Icon(Icons.add_circle, color: Colors.green),
+                      onPressed: () {
+                        setState(() {
+                          quantity++;
+                        });
+                      },
+                    ),
+                  ],
                 ),
-                Text(
-                  '$quantity',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    // Add to cart functionality later
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2E7D32), // Green color from screenshot
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'ADD TO CART',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.add_circle, color: Colors.green),
-                  onPressed: () {
-                    setState(() {
-                      quantity++;
-                    });
-                  },
-                ),
               ],
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: () {
-                // Add to cart functionality later
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColor.primaryColor,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              child: const Text(
-                'ADD TO CART',
-                style: TextStyle(color: Colors.white),
-              ),
             ),
           ],
         ),

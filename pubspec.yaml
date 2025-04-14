@@ -46,6 +46,9 @@ dependencies:
   dartz: ^0.10.1
   flutter_secure_storage: ^5.0.2 # For secure storage of sensitive data
   logger: ^1.1.0 # For logging
+  lottie: ^3.1.3
+  smooth_page_indicator: ^1.0.0+2
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -75,6 +78,11 @@ flutter:
     - assets/logo2.png
     - assets/restuarant.png
     - assets/burger.png
+    - assets/animation/delivery_animation1.json
+    - assets/animation/delivery_animation2.json
+    - assets/animation/delivery_animation3.json
+    - assets/animation/delivery_animation4.json
+
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

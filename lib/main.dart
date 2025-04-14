@@ -1,4 +1,3 @@
-import 'package:eshi_tap/common/widgets/main_tab_view.dart';
 import 'package:eshi_tap/features/Auth/presentation/bloc/auth_bloc.dart';
 import 'package:eshi_tap/splash_screen.dart';
 import 'package:flutter/material.dart';

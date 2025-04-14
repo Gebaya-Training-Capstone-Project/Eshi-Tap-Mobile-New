@@ -1,3 +1,6 @@
+
+
+import 'package:eshi_tap/features/Restuarant/data/model/meals_model.dart';
 import 'package:eshi_tap/features/Restuarant/domain/entity/restaurant.dart';
 
 class RestaurantModel {
@@ -5,12 +8,14 @@ class RestaurantModel {
   final String restaurantName;
   final String description;
   final String location;
-  final List<RestaurantImage> restaurantImages; 
+  final List<RestaurantImage> restaurantImages;
   final double latitude;
   final double longitude;
   final bool status;
   final String createdAt;
   final String updatedAt;
+  final String userId;
+  final List<MealModel>? meals; // New field for meals
 
   RestaurantModel({
     required this.id,
@@ -23,6 +28,8 @@ class RestaurantModel {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    required this.userId,
+    this.meals,
   });
 
   factory RestaurantModel.fromJson(Map<String, dynamic> json) {
@@ -43,6 +50,10 @@ class RestaurantModel {
       status: json['status'] as bool,
       createdAt: json['createdAt'] as String,
       updatedAt: json['updatedAt'] as String,
+      userId: json['userId'] as String,
+      meals: (json['meals'] as List?)
+          ?.map((mealJson) => MealModel.fromJson(mealJson))
+          .toList(),
     );
   }
 }
@@ -54,12 +65,15 @@ extension RestaurantModelX on RestaurantModel {
       restaurantName: restaurantName,
       description: description,
       location: location,
-      restaurantImages: restaurantImages, // Now the same type, no conversion needed
+      restaurantImages: restaurantImages,
       latitude: latitude,
       longitude: longitude,
       status: status,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      userId: userId,
+      meals: meals?.map((meal) => meal.toEntity()).toList(),
     );
+  
   }
 }

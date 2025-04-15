@@ -2,6 +2,7 @@ import 'package:eshi_tap/core/configs/theme/color_extensions.dart';
 import 'package:eshi_tap/features/Restuarant/domain/entity/restaurant.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/meal_details_page.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RestaurantDetailsPage extends StatefulWidget {
   final Restaurant restaurant;
@@ -14,6 +15,49 @@ class RestaurantDetailsPage extends StatefulWidget {
 
 class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
   String selectedCategory = 'All'; // Default category
+  bool isFavorite = false; // Track if the restaurant is favorited
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfFavorite();
+  }
+
+  // Check if the restaurant is in favorites
+  Future<void> _checkIfFavorite() async {
+    final prefs = await SharedPreferences.getInstance();
+    final favoriteRestaurantIds = prefs.getStringList('favorite_restaurants') ?? [];
+    setState(() {
+      isFavorite = favoriteRestaurantIds.contains(widget.restaurant.id);
+    });
+  }
+
+  // Toggle the favorite status of the restaurant
+  Future<void> _toggleFavorite() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> favoriteRestaurantIds = prefs.getStringList('favorite_restaurants') ?? [];
+
+    if (isFavorite) {
+      favoriteRestaurantIds.remove(widget.restaurant.id);
+    } else {
+      favoriteRestaurantIds.add(widget.restaurant.id);
+    }
+
+    await prefs.setStringList('favorite_restaurants', favoriteRestaurantIds);
+    setState(() {
+      isFavorite = !isFavorite;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isFavorite
+              ? '${widget.restaurant.restaurantName} added to favorites'
+              : '${widget.restaurant.restaurantName} removed from favorites',
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,10 +109,11 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.favorite_border, color: Colors.white),
-                onPressed: () {
-                  // Add favorite functionality later
-                },
+                icon: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: Colors.white,
+                ),
+                onPressed: _toggleFavorite,
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
@@ -135,7 +180,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                             size: 16,
                           ),
                           const SizedBox(width: 2),
-                           Text(
+                          Text(
                             '80 birr', // Hardcoded until backend provides deliveryFee
                             style: TextStyle(
                               color: AppColor.secondoryColor,
@@ -220,7 +265,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                 children: [
                   Text(
                     '$selectedCategory (${filteredMeals.length})',
-                    style:  TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: AppColor.primaryTextColor,
@@ -286,7 +331,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                                     children: [
                                       Text(
                                         meal.name,
-                                        style:  TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
                                           color: AppColor.primaryTextColor,
@@ -304,7 +349,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                                       Align(
                                         alignment: Alignment.centerRight,
                                         child: IconButton(
-                                          icon:  Icon(
+                                          icon: Icon(
                                             Icons.add_circle,
                                             color: AppColor.primaryColor,
                                             size: 30,

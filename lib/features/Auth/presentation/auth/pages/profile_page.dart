@@ -1,9 +1,20 @@
-import 'package:eshi_tap/core/configs/theme/color_extensions.dart';
+import 'package:eshi_tap/features/Auth/presentation/auth/pages/profile_info_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:eshi_tap/core/configs/theme/color_extensions.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  String name = 'Abebe Abebe';
+  String phoneNumber = '+251 7070707';
+  String emailAddress = 'abefoodmood@gmail.com';
+  String profileImageUrl = 'https://via.placeholder.com/150';
 
   @override
   Widget build(BuildContext context) {
@@ -19,104 +30,130 @@ class ProfilePage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppColor.primaryTextColor, // Updated to AppColor
+                  color: AppColor.primaryTextColor,
                 ),
               ),
               const SizedBox(height: 16.0),
 
               // Profile Card
               Container(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColor.primaryColor, // Updated to AppColor (was Colors.green[600])
-                  borderRadius: BorderRadius.circular(16.0),
+                  color: AppColor.primaryColor,
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Stack(
                   children: [
-                    // Pizza SVG Background
-                    Positioned.fill(
+                    // Pizza SVG positioned left-center
+                    Positioned(
+                      left: 0,
+                      top: 10,
+                      bottom: 10,
                       child: Opacity(
-                        opacity: 0.1,
+                        opacity: 1.0,
                         child: SvgPicture.asset(
                           'assets/profilePizza.svg',
-                          fit: BoxFit.cover,
+                          height: 140,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // User Info
+                        // User Info (Text)
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Abebe Abebe',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white, // Kept as white for contrast on primaryColor
-                                ),
-                              ),
-                              const SizedBox(height: 4.0),
-                              const Text(
-                                '+251 7070707',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white, // Kept as white for contrast
-                                ),
-                              ),
-                              const SizedBox(height: 4.0),
-                              const Text(
-                                'abefoodmood@gmail.com',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white, // Kept as white for contrast
-                                ),
-                              ),
-                              const SizedBox(height: 16.0),
                               Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                phoneNumber,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                emailAddress,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              const Text(
                                 'View activity',
                                 style: TextStyle(
-                                  fontSize: 14,
-                                  color: AppColor.subTextColor,
-                                  decoration: TextDecoration.underline,
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        // Profile Picture
-                        const CircleAvatar(
-                          radius: 40,
-                          backgroundImage: NetworkImage(
-                            'https://via.placeholder.com/150', // Placeholder image
-                          ),
+                        // Profile Picture and Edit Icon
+                        Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 36,
+                              backgroundImage: NetworkImage(profileImageUrl),
+                            ),
+                            const SizedBox(height: 32),
+                            GestureDetector(
+                              onTap: () async {
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => PersonalInformationPage(
+                                      name: name,
+                                      phoneNumber: phoneNumber,
+                                      emailAddress: emailAddress,
+                                      profileImageUrl: profileImageUrl,
+                                    ),
+                                  ),
+                                );
+                                if (result != null) {
+                                  setState(() {
+                                    name = result['name'];
+                                    phoneNumber = result['phoneNumber'];
+                                    emailAddress = result['emailAddress'];
+                                    profileImageUrl = result['profileImage'];
+                                  });
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                ),
+                                child: const Icon(
+                                  Icons.edit,
+                                  size: 16,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                    // Pen Icon
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.edit,
-                          color: Colors.white, // Kept as white for contrast
-                        ),
-                        onPressed: () {
-                          // Navigate to Edit Profile page (to be provided later)
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Edit Profile page to be implemented'),
-                            ),
-                          );
-                        },
-                      ),
                     ),
                   ],
                 ),
               ),
+
               const SizedBox(height: 24.0),
 
               // List Items
@@ -152,10 +189,10 @@ class ProfilePage extends StatelessWidget {
                       icon: Icons.logout,
                       title: 'Logout',
                       onTap: () {
-                        // Placeholder for logout logic
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Logout functionality to be implemented'),
+                            content:
+                                Text('Logout functionality to be implemented'),
                           ),
                         );
                       },
@@ -170,7 +207,10 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildListItem(BuildContext context, {required IconData icon, required String title, required VoidCallback onTap}) {
+  Widget _buildListItem(BuildContext context,
+      {required IconData icon,
+      required String title,
+      required VoidCallback onTap}) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -179,7 +219,7 @@ class ProfilePage extends StatelessWidget {
       child: ListTile(
         leading: Icon(
           icon,
-          color: AppColor.primaryTextColor, // Updated to AppColor (was Colors.black)
+          color: AppColor.primaryTextColor,
         ),
         title: Text(
           title,
@@ -191,7 +231,7 @@ class ProfilePage extends StatelessWidget {
         trailing: Icon(
           Icons.arrow_forward_ios,
           size: 16,
-          color: AppColor.primaryTextColor, // Updated to AppColor (was Colors.black)
+          color: AppColor.primaryTextColor,
         ),
         onTap: onTap,
       ),

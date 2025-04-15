@@ -1,4 +1,5 @@
 
+import 'package:eshi_tap/common/widgets/main_tab_view.dart';
 import 'package:eshi_tap/core/configs/theme/color_extensions.dart';
 import 'package:eshi_tap/features/Auth/presentation/auth/pages/signup.dart';
 import 'package:flutter/material.dart';
@@ -83,7 +84,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => SignupPage(),
+                          builder: (context) => MainTabView(),
+                          // builder: (context) => SignupPage(),
                         ),
                       );
                     },

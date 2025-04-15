@@ -14,6 +14,7 @@ class RestaurantPage extends StatelessWidget {
     if (description.length <= maxLength) return description;
     return '${description.substring(0, maxLength)}...';
   }
+  
 
   // Helper method to calculate the average rating of a restaurant based on its meals
   double calculateAverageRating(List<Meal> meals) {

@@ -50,6 +50,10 @@ dependencies:
   smooth_page_indicator: ^1.0.0+2
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.10+1
+  image_picker: ^1.1.2
+  font_awesome_flutter: ^10.7.0
+  permission_handler: ^11.3.1
+  geolocator: ^12.0.0
 
 dev_dependencies:
   flutter_test:

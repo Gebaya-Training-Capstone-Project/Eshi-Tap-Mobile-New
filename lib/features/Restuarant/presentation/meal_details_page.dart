@@ -1,6 +1,8 @@
 import 'package:eshi_tap/core/configs/theme/color_extensions.dart';
 import 'package:eshi_tap/features/Restuarant/domain/entity/meal.dart';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MealDetailsPage extends StatefulWidget {
   final Meal meal;
@@ -15,6 +17,7 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
   int quantity = 1;
   final Map<String, bool> selectedAddOns = {};
   final Map<String, int> addOnQuantities = {};
+  bool isFavorite = false; // Track if the meal is favorited
 
   // Local mapping of add-on names to icons
   final Map<String, IconData> addOnIcons = {
@@ -61,14 +64,57 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
       selectedAddOns[addon.name] = addon.isRequired ?? false;
       addOnQuantities[addon.name] = addon.isRequired ?? false ? 1 : 0;
     }
+    // Check if the meal is already favorited
+    _checkIfFavorite();
+  }
+
+  // Check if the meal is in favorites
+  Future<void> _checkIfFavorite() async {
+    final prefs = await SharedPreferences.getInstance();
+    final favoriteMealIds = prefs.getStringList('favorite_meals') ?? [];
+    setState(() {
+      isFavorite = favoriteMealIds.contains(widget.meal.id);
+    });
+  }
+
+  // Toggle the favorite status of the meal
+  Future<void> _toggleFavorite() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> favoriteMealIds = prefs.getStringList('favorite_meals') ?? [];
+
+    if (isFavorite) {
+      favoriteMealIds.remove(widget.meal.id);
+    } else {
+      favoriteMealIds.add(widget.meal.id);
+    }
+
+    await prefs.setStringList('favorite_meals', favoriteMealIds);
+    setState(() {
+      isFavorite = !isFavorite;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isFavorite
+              ? '${widget.meal.name} added to favorites'
+              : '${widget.meal.name} removed from favorites',
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final defaultImage = widget.meal.images.firstWhere(
-      (image) => image.defaultImage,
-      orElse: () => widget.meal.images.first,
-    );
+    // Handle the default image safely
+    String imageUrl = 'https://via.placeholder.com/150'; // Fallback placeholder
+    if (widget.meal.images.isNotEmpty) {
+      final defaultImage = widget.meal.images.firstWhere(
+        (image) => image.defaultImage,
+        orElse: () => widget.meal.images.first,
+      );
+      imageUrl = defaultImage.secureUrl;
+    }
 
     // Calculate prices
     double basePrice = widget.meal.price * quantity;
@@ -99,17 +145,18 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.favorite_border, color: Colors.white),
-                onPressed: () {
-                  // Add favorite functionality later
-                },
+                icon: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: Colors.white,
+                ),
+                onPressed: _toggleFavorite,
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Hero(
                 tag: 'meal-image-${widget.meal.id}',
                 child: Image.network(
-                  defaultImage.secureUrl,
+                  imageUrl,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) =>
                       const Icon(Icons.error),
@@ -152,7 +199,7 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
                           ),
                           const SizedBox(width: 2),
                           Text(
-                            widget.meal.ratings?.average.toString() ?? 'N/A',
+                            widget.meal.ratings?.average?.toString() ?? 'N/A',
                             style: TextStyle(
                               color: AppColor.secondoryColor,
                               fontSize: 12,
@@ -349,7 +396,6 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
                       runSpacing: 8,
                       alignment: WrapAlignment.start,
                       children: widget.meal.ingredients!.map((ingredient) {
-                        final isAllergen = widget.meal.allergens?.contains(ingredient.name.toLowerCase()) ?? false;
                         return Column(
                           children: [
                             Container(
@@ -374,14 +420,6 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
                                 color: AppColor.primaryTextColor,
                               ),
                             ),
-                            if (isAllergen)
-                              Text(
-                                '(Allergy)',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: AppColor.subTextColor,
-                                ),
-                              ),
                           ],
                         );
                       }).toList(),
@@ -512,7 +550,7 @@ class _MealDetailsPageState extends State<MealDetailsPage> {
                     // Add to cart functionality later
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32), // Green color from screenshot
+                    backgroundColor: AppColor.primaryColor, // Updated to use AppColor
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     shape: RoundedRectangleBorder(

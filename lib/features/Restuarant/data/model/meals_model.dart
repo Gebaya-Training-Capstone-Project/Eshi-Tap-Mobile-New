@@ -19,6 +19,7 @@ class MealModel {
   final bool? isFavorited;
   final List<String>? categories;
   final int? estimatedDeliveryTime;
+  final Map<String, dynamic> ratingsMap;
   final List<String>? allergens; // New field for allergens
 
   MealModel({
@@ -40,6 +41,7 @@ class MealModel {
     this.isFavorited,
     this.categories,
     this.estimatedDeliveryTime,
+    required this.ratingsMap,
     this.allergens,
   });
 
@@ -65,6 +67,7 @@ class MealModel {
               count: json['ratings']['count'] as int,
             )
           : null,
+      ratingsMap: json['ratings'] as Map<String, dynamic>,
       preparationTime: json['preparationTime'] as int?,
       calories: json['calories'] as int?,
       spiceLevel: json['spiceLevel'] as String?,

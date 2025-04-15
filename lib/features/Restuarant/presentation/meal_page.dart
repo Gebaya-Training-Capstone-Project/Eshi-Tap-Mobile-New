@@ -14,68 +14,68 @@ class MealPage extends StatelessWidget {
     return BlocProvider(
       create: (context) => sl<MealBloc>()..add(FetchMeals()),
       child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-          title: Text(
-            'Food Category',
-            style: TextStyle(
-              color: AppColor.headerTextColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          actions: [
-            Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.shopping_cart),
-                  onPressed: () {
-                    // Add cart navigation logic later
-                  },
-                ),
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: AppColor.primaryColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Text(
-                      '2',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+        // appBar: AppBar(
+        //   leading: IconButton(
+        //     icon: const Icon(Icons.arrow_back),
+        //     onPressed: () {
+        //       Navigator.pop(context);
+        //     },
+        //   ),
+        //   title: Text(
+        //     'Food Category',
+        //     style: TextStyle(
+        //       color: AppColor.headerTextColor,
+        //       fontWeight: FontWeight.bold,
+        //     ),
+        //   ),
+        //   actions: [
+        //     Stack(
+        //       children: [
+        //         IconButton(
+        //           icon: const Icon(Icons.shopping_cart),
+        //           onPressed: () {
+        //             // Add cart navigation logic later
+        //           },
+        //         ),
+        //         Positioned(
+        //           right: 8,
+        //           top: 8,
+        //           child: Container(
+        //             padding: const EdgeInsets.all(4),
+        //             decoration: BoxDecoration(
+        //               color: AppColor.primaryColor,
+        //               shape: BoxShape.circle,
+        //             ),
+        //             child: const Text(
+        //               '2',
+        //               style: TextStyle(
+        //                 color: Colors.white,
+        //                 fontSize: 12,
+        //               ),
+        //             ),
+        //           ),
+        //         ),
+        //       ],
+        //     ),
+        //   ],
+        // ),
         body: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search dishes,',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: AppColor.secondoryBackgroundColor,
-                ),
-              ),
-            ),
+            // Padding(
+            //   padding: const EdgeInsets.all(16.0),
+            //   child: TextField(
+            //     decoration: InputDecoration(
+            //       hintText: 'Search dishes,',
+            //       prefixIcon: const Icon(Icons.search),
+            //       border: OutlineInputBorder(
+            //         borderRadius: BorderRadius.circular(8),
+            //         borderSide: BorderSide.none,
+            //       ),
+            //       filled: true,
+            //       fillColor: AppColor.secondoryBackgroundColor,
+            //     ),
+            //   ),
+            // ),
             Expanded(
               child: BlocBuilder<MealBloc, MealState>(
                 builder: (context, state) {

@@ -28,13 +28,12 @@ class _SplashPageState extends State<SplashPage> {
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           Future.delayed(const Duration(seconds: 2), () {
-            // if (state is AuthAuthenticated) {
-            //   Navigator.pushReplacement(
-            //     context,
-            //     MaterialPageRoute(builder: (context) => const MainTabView()),
-            //   );
-            // } else 
-            if (state is AuthUnauthenticated || state is AuthError) {
+            if (state is AuthAuthenticated) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MainTabView()),
+              );
+            } else if (state is AuthUnauthenticated || state is AuthError) {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => OnboardingPage()),

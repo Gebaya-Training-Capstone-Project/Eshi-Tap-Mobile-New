@@ -46,15 +46,15 @@ class _MainTabViewState extends State<MainTabView> {
           create: (context) => sl<MealBloc>()..add(FetchMeals()),
         ),
       ],
-      child: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is AuthUnauthenticated) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const SigninPage()),
-            );
-          }
-        },
+      // child: BlocListener<AuthBloc, AuthState>(
+      //   listener: (context, state) {
+      //     if (state is AuthUnauthenticated) {
+      //       Navigator.pushReplacement(
+      //         context,
+      //         MaterialPageRoute(builder: (context) => const SigninPage()),
+      //       );
+      //     }
+      //   },
         child: MultiBlocListener(
           listeners: [
             BlocListener<RestaurantBloc, RestaurantState>(
@@ -192,7 +192,7 @@ class _MainTabViewState extends State<MainTabView> {
             },
           ),
         ),
-      ),
+      
     );
   }
 }

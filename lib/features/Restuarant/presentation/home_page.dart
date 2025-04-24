@@ -3,6 +3,7 @@ import 'package:eshi_tap/features/Restuarant/domain/entity/meal.dart';
 
 import 'package:eshi_tap/features/Restuarant/presentation/bloc/meal_bloc.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/bloc/restaurant_bloc.dart';
+import 'package:eshi_tap/features/Restuarant/presentation/cart_page.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/meal_details_page.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/restaurant_details_page.dart';
 import 'package:flutter/material.dart';
@@ -103,7 +104,8 @@ class _HomePageState extends State<HomePage> {
           children: [
             // Header: Greeting, Location, and Cart Icon
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -117,7 +119,8 @@ class _HomePageState extends State<HomePage> {
                             backgroundColor: AppColor.placeholder,
                             child: const Text(
                               'N',
-                              style: TextStyle(color: Colors.white, fontSize: 16),
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 16),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -186,8 +189,10 @@ class _HomePageState extends State<HomePage> {
                         size: 24,
                       ),
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Cart page - To be implemented')),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const CartPage()),
                         );
                       },
                     ),
@@ -245,28 +250,31 @@ class _HomePageState extends State<HomePage> {
                     BlocBuilder<MealBloc, MealState>(
                       builder: (context, state) {
                         if (state is MealLoading) {
-                          return const Center(child: CircularProgressIndicator());
+                          return const Center(
+                              child: CircularProgressIndicator());
                         } else if (state is MealLoaded) {
                           final meals = state.meals
                               .where((meal) => meal.availability)
                               .toList()
-                              .where((meal) =>
-                                  selectedCategory == null )
+                              .where((meal) => selectedCategory == null)
                               .toList()
                             ..sort((a, b) => (b.ratings?.average ?? 0.0)
                                 .compareTo(a.ratings?.average ?? 0.0));
                           if (meals.isEmpty) {
-                            return const Center(child: Text('No meals available'));
+                            return const Center(
+                                child: Text('No meals available'));
                           }
                           return SizedBox(
                             height: 180,
                             child: ListView.builder(
                               scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16.0),
                               itemCount: meals.length,
                               itemBuilder: (context, index) {
                                 final meal = meals[index];
-                                String imageUrl = 'https://via.placeholder.com/150';
+                                String imageUrl =
+                                    'https://via.placeholder.com/150';
                                 if (meal.images.isNotEmpty) {
                                   final defaultImage = meal.images.firstWhere(
                                     (image) => image.defaultImage,
@@ -279,7 +287,8 @@ class _HomePageState extends State<HomePage> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => MealDetailsPage(meal: meal),
+                                        builder: (context) =>
+                                            MealDetailsPage(meal: meal),
                                       ),
                                     );
                                   },
@@ -292,10 +301,12 @@ class _HomePageState extends State<HomePage> {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           ClipRRect(
-                                            borderRadius: const BorderRadius.only(
+                                            borderRadius:
+                                                const BorderRadius.only(
                                               topLeft: Radius.circular(12),
                                               topRight: Radius.circular(12),
                                             ),
@@ -304,22 +315,26 @@ class _HomePageState extends State<HomePage> {
                                               width: double.infinity,
                                               height: 90,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) =>
+                                              errorBuilder: (context, error,
+                                                      stackTrace) =>
                                                   const Icon(Icons.error),
                                             ),
                                           ),
                                           Expanded(
                                             child: Padding(
-                                              padding: const EdgeInsets.all(8.0),
+                                              padding:
+                                                  const EdgeInsets.all(8.0),
                                               child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
                                                   Row(
                                                     children: [
                                                       Icon(
                                                         Icons.star,
-                                                        color: AppColor.secondoryColor,
+                                                        color: AppColor
+                                                            .secondoryColor,
                                                         size: 14,
                                                       ),
                                                       const SizedBox(width: 4),
@@ -327,7 +342,8 @@ class _HomePageState extends State<HomePage> {
                                                         '${meal.ratings?.average ?? 0.0} ',
                                                         style: TextStyle(
                                                           fontSize: 10,
-                                                          color: AppColor.primaryTextColor,
+                                                          color: AppColor
+                                                              .primaryTextColor,
                                                         ),
                                                       ),
                                                     ],
@@ -337,18 +353,22 @@ class _HomePageState extends State<HomePage> {
                                                     meal.name,
                                                     style: TextStyle(
                                                       fontSize: 12,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: AppColor.primaryTextColor,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: AppColor
+                                                          .primaryTextColor,
                                                     ),
                                                     maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                   const SizedBox(height: 2),
                                                   Text(
                                                     '${meal.price.toStringAsFixed(0)} ${meal.currency}',
                                                     style: TextStyle(
                                                       fontSize: 10,
-                                                      color: AppColor.subTextColor,
+                                                      color:
+                                                          AppColor.subTextColor,
                                                     ),
                                                   ),
                                                   const SizedBox(height: 2),
@@ -356,7 +376,8 @@ class _HomePageState extends State<HomePage> {
                                                     'Trattoria Gusto',
                                                     style: TextStyle(
                                                       fontSize: 10,
-                                                      color: AppColor.subTextColor,
+                                                      color:
+                                                          AppColor.subTextColor,
                                                     ),
                                                   ),
                                                 ],
@@ -395,11 +416,15 @@ class _HomePageState extends State<HomePage> {
                     BlocBuilder<RestaurantBloc, RestaurantState>(
                       builder: (context, state) {
                         if (state is RestaurantLoading) {
-                          return const Center(child: CircularProgressIndicator());
+                          return const Center(
+                              child: CircularProgressIndicator());
                         } else if (state is RestaurantLoaded) {
-                          final restaurants = state.restaurants.where((restaurant) => restaurant.status).toList();
+                          final restaurants = state.restaurants
+                              .where((restaurant) => restaurant.status)
+                              .toList();
                           if (restaurants.isEmpty) {
-                            return const Center(child: Text('No restaurants available'));
+                            return const Center(
+                                child: Text('No restaurants available'));
                           }
                           return ListView.builder(
                             shrinkWrap: true,
@@ -407,11 +432,14 @@ class _HomePageState extends State<HomePage> {
                             itemCount: restaurants.length,
                             itemBuilder: (context, index) {
                               final restaurant = restaurants[index];
-                              String imageUrl = 'https://via.placeholder.com/150';
+                              String imageUrl =
+                                  'https://via.placeholder.com/150';
                               if (restaurant.restaurantImages.isNotEmpty) {
-                                final defaultImage = restaurant.restaurantImages.firstWhere(
+                                final defaultImage =
+                                    restaurant.restaurantImages.firstWhere(
                                   (image) => image.defaultImage,
-                                  orElse: () => restaurant.restaurantImages.first,
+                                  orElse: () =>
+                                      restaurant.restaurantImages.first,
                                 );
                                 imageUrl = defaultImage.secureUrl;
                               }
@@ -421,7 +449,8 @@ class _HomePageState extends State<HomePage> {
                                 double totalRating = 0.0;
                                 int count = 0;
                                 for (var meal in meals) {
-                                  final averageRating = meal.ratings?.average ?? 0.0;
+                                  final averageRating =
+                                      meal.ratings?.average ?? 0.0;
                                   if (averageRating > 0) {
                                     totalRating += averageRating;
                                     count++;
@@ -430,16 +459,20 @@ class _HomePageState extends State<HomePage> {
                                 return count > 0 ? (totalRating / count) : 0.0;
                               }
 
-                              final averageRating = calculateAverageRating(restaurant.meals);
+                              final averageRating =
+                                  calculateAverageRating(restaurant.meals);
 
                               return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0, vertical: 8.0),
                                 child: GestureDetector(
                                   onTap: () {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => RestaurantDetailsPage(restaurant: restaurant),
+                                        builder: (context) =>
+                                            RestaurantDetailsPage(
+                                                restaurant: restaurant),
                                       ),
                                     );
                                   },
@@ -449,7 +482,8 @@ class _HomePageState extends State<HomePage> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         ClipRRect(
                                           borderRadius: const BorderRadius.only(
@@ -461,43 +495,59 @@ class _HomePageState extends State<HomePage> {
                                             width: double.infinity,
                                             height: 150,
                                             fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) =>
-                                                const Icon(Icons.error),
+                                            errorBuilder:
+                                                (context, error, stackTrace) =>
+                                                    const Icon(Icons.error),
                                           ),
                                         ),
                                         Padding(
                                           padding: const EdgeInsets.all(12.0),
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
                                                 children: [
                                                   Text(
                                                     restaurant.restaurantName,
                                                     style: TextStyle(
                                                       fontSize: 16,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: AppColor.primaryTextColor,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: AppColor
+                                                          .primaryTextColor,
                                                     ),
                                                   ),
                                                   Container(
-                                                    padding: const EdgeInsets.symmetric(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
                                                       horizontal: 8.0,
                                                       vertical: 4.0,
                                                     ),
                                                     decoration: BoxDecoration(
                                                       color: restaurant.status
-                                                          ? Colors.green.withOpacity(0.1)
-                                                          : Colors.red.withOpacity(0.1),
-                                                      borderRadius: BorderRadius.circular(8),
+                                                          ? Colors.green
+                                                              .withOpacity(0.1)
+                                                          : Colors.red
+                                                              .withOpacity(0.1),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
                                                     ),
                                                     child: Text(
-                                                      restaurant.status ? 'Open' : 'Closed',
+                                                      restaurant.status
+                                                          ? 'Open'
+                                                          : 'Closed',
                                                       style: TextStyle(
-                                                        color: restaurant.status ? Colors.green : Colors.red,
+                                                        color: restaurant.status
+                                                            ? Colors.green
+                                                            : Colors.red,
                                                         fontSize: 12,
-                                                        fontWeight: FontWeight.bold,
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                       ),
                                                     ),
                                                   ),
@@ -505,7 +555,8 @@ class _HomePageState extends State<HomePage> {
                                               ),
                                               const SizedBox(height: 4),
                                               Text(
-                                                restaurant.description.length <= 100
+                                                restaurant.description.length <=
+                                                        100
                                                     ? restaurant.description
                                                     : '${restaurant.description.substring(0, 100)}...',
                                                 style: TextStyle(
@@ -520,18 +571,23 @@ class _HomePageState extends State<HomePage> {
                                                     children: [
                                                       Icon(
                                                         Icons.star,
-                                                        color: AppColor.secondoryColor,
+                                                        color: AppColor
+                                                            .secondoryColor,
                                                         size: 16,
                                                       ),
                                                       const SizedBox(width: 2),
                                                       Text(
                                                         averageRating > 0
-                                                            ? averageRating.toStringAsFixed(1)
+                                                            ? averageRating
+                                                                .toStringAsFixed(
+                                                                    1)
                                                             : 'N/A',
                                                         style: TextStyle(
                                                           fontSize: 12,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: AppColor.primaryTextColor,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: AppColor
+                                                              .primaryTextColor,
                                                         ),
                                                       ),
                                                     ],
@@ -541,7 +597,8 @@ class _HomePageState extends State<HomePage> {
                                                     children: [
                                                       Icon(
                                                         Icons.delivery_dining,
-                                                        color: AppColor.secondoryColor,
+                                                        color: AppColor
+                                                            .secondoryColor,
                                                         size: 16,
                                                       ),
                                                       const SizedBox(width: 2),
@@ -549,8 +606,10 @@ class _HomePageState extends State<HomePage> {
                                                         '80 birr',
                                                         style: TextStyle(
                                                           fontSize: 12,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: AppColor.primaryTextColor,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: AppColor
+                                                              .primaryTextColor,
                                                         ),
                                                       ),
                                                     ],
@@ -560,7 +619,8 @@ class _HomePageState extends State<HomePage> {
                                                     children: [
                                                       Icon(
                                                         Icons.access_time,
-                                                        color: AppColor.secondoryColor,
+                                                        color: AppColor
+                                                            .secondoryColor,
                                                         size: 16,
                                                       ),
                                                       const SizedBox(width: 2),
@@ -568,8 +628,10 @@ class _HomePageState extends State<HomePage> {
                                                         '20 min',
                                                         style: TextStyle(
                                                           fontSize: 12,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: AppColor.primaryTextColor,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: AppColor
+                                                              .primaryTextColor,
                                                         ),
                                                       ),
                                                     ],
@@ -589,7 +651,8 @@ class _HomePageState extends State<HomePage> {
                         } else if (state is RestaurantError) {
                           return Center(child: Text(state.message));
                         }
-                        return const Center(child: Text('No restaurants found'));
+                        return const Center(
+                            child: Text('No restaurants found'));
                       },
                     ),
                   ],
@@ -601,7 +664,8 @@ class _HomePageState extends State<HomePage> {
             if (!isLocationPermissionGranted)
               Container(
                 color: AppColor.secondoryColor.withOpacity(0.9),
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -656,14 +720,18 @@ class _HomePageState extends State<HomePage> {
             FaIcon(
               icon,
               size: 20,
-              color: isSelected ? AppColor.primaryColor : AppColor.primaryTextColor,
+              color: isSelected
+                  ? AppColor.primaryColor
+                  : AppColor.primaryTextColor,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
                 fontSize: 14,
-                color: isSelected ? AppColor.primaryColor : AppColor.primaryTextColor,
+                color: isSelected
+                    ? AppColor.primaryColor
+                    : AppColor.primaryTextColor,
               ),
             ),
           ],

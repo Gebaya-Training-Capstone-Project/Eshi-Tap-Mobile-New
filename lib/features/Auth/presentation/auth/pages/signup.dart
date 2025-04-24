@@ -6,7 +6,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
@@ -49,18 +48,31 @@ class _SignupPageState extends State<SignupPage> {
 
   void _validateForm() {
     setState(() {
-      _usernameError = _usernameCon.text.length < 3 ? 'Username must be at least 3 characters' : null;
-      _emailError = !_emailCon.text.contains(RegExp(r'^[^@]+@[^@]+\.[^@]+')) ? 'Enter a valid email' : null;
-      _passwordError = _passwordCon.text.length < 6 ? 'Password must be at least 6 characters' : null;
-      _confirmPasswordError = _passwordCon.text != _confirmPasswordCon.text ? 'Passwords do not match' : null;
-      _phoneError = !_phoneCon.text.startsWith('09') || _phoneCon.text.length != 10 ? 'Enter a valid phone (e.g., 0912345678)' : null;
-      _addressError = _addressCon.text.isEmpty ? 'Address cannot be empty' : null;
+      _usernameError = _usernameCon.text.length < 3
+          ? 'Username must be at least 3 characters'
+          : null;
+      _emailError = !_emailCon.text.contains(RegExp(r'^[^@]+@[^@]+\.[^@]+'))
+          ? 'Enter a valid email'
+          : null;
+      _passwordError = _passwordCon.text.length < 6
+          ? 'Password must be at least 6 characters'
+          : null;
+      _confirmPasswordError = _passwordCon.text != _confirmPasswordCon.text
+          ? 'Passwords do not match'
+          : null;
+      _phoneError =
+          !_phoneCon.text.startsWith('09') || _phoneCon.text.length != 10
+              ? 'Enter a valid phone (e.g., 0912345678)'
+              : null;
+      _addressError =
+          _addressCon.text.isEmpty ? 'Address cannot be empty' : null;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColor.backgroundColor,
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {
@@ -75,29 +87,135 @@ class _SignupPageState extends State<SignupPage> {
           }
         },
         child: SafeArea(
-          minimum: const EdgeInsets.only(top: 100, right: 16, left: 16),
           child: SingleChildScrollView(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _signup(),
-                const SizedBox(height: 50),
-                _userNameField(),
-                const SizedBox(height: 20),
-                _emailField(),
-                const SizedBox(height: 20),
-                _password(),
-                const SizedBox(height: 20),
-                _confirmPassword(),
-                const SizedBox(height: 20),
-                _phone(),
-                const SizedBox(height: 20),
-                _address(),
-                const SizedBox(height: 60),
-                _createAccountButton(context),
-                const SizedBox(height: 20),
-                _signinText(context),
+                // Header with logo
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  color: AppColor.primaryColor, // Green header background
+                  child: Center(
+                    child: Image.asset(
+                      'assets/logo.png',
+                      height: 80,
+                    ),
+                  ),
+                ),
+                // Form container with rounded corners
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColor.backgroundColor,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(100),
+                      topRight: Radius.circular(120),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 30),
+                      // Sign Up Title
+                      Text(
+                        'Sign Up',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: AppColor.primaryTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Subtitle
+                      Text(
+                        'Please sign up to get started',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColor.subTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      // Form Fields
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: [
+                            _userNameField(),
+                            const SizedBox(height: 16),
+                            _emailField(),
+                            const SizedBox(height: 16),
+                            _password(),
+                            const SizedBox(height: 16),
+                            _confirmPassword(),
+                            const SizedBox(height: 16),
+                            _phone(),
+                            const SizedBox(height: 16),
+                            _address(),
+                            const SizedBox(height: 30),
+                            _createAccountButton(context),
+                            const SizedBox(height: 20),
+                            // Or sign up with Google
+                            Row(
+                              children: [
+                                Expanded(
+                                    child:
+                                        Divider(color: AppColor.subTextColor)),
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text(
+                                    'Or sign up with',
+                                    style:
+                                        TextStyle(color: AppColor.subTextColor),
+                                  ),
+                                ),
+                                Expanded(
+                                    child:
+                                        Divider(color: AppColor.subTextColor)),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                // Add Google Sign-Up logic here
+                              },
+                              icon: Image.asset(
+                                'assets/google_logo.png',
+                                height: 24,
+                              ),
+                              label: Text(
+                                'Google',
+                                style:
+                                    TextStyle(color: AppColor.primaryTextColor),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: AppColor.subTextColor),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12,horizontal: 24),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            _signinText(context),
+                            const SizedBox(height: 20),
+                            // Copyright notice
+                            Text(
+                              '© 2025 ALL RIGHTS RESERVED',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColor.subTextColor,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -107,12 +225,12 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   Widget _signup() {
-    return const Text(
+    return Text(
       'Sign Up',
       style: TextStyle(
-        color: Color(0xff2A4ECA),
+        fontSize: 28,
         fontWeight: FontWeight.bold,
-        fontSize: 32,
+        color: AppColor.primaryTextColor,
       ),
     );
   }
@@ -122,7 +240,16 @@ class _SignupPageState extends State<SignupPage> {
       controller: _usernameCon,
       decoration: InputDecoration(
         hintText: 'Username',
+        hintStyle: TextStyle(color: AppColor.placeholder),
         errorText: _usernameError,
+        filled: true,
+        fillColor: AppColor.secondoryBackgroundColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(25),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
       onChanged: (_) => _validateForm(),
     );
@@ -133,7 +260,16 @@ class _SignupPageState extends State<SignupPage> {
       controller: _emailCon,
       decoration: InputDecoration(
         hintText: 'Email',
+        hintStyle: TextStyle(color: AppColor.placeholder),
         errorText: _emailError,
+        filled: true,
+        fillColor: AppColor.secondoryBackgroundColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(25),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
       onChanged: (_) => _validateForm(),
     );
@@ -144,10 +280,23 @@ class _SignupPageState extends State<SignupPage> {
       controller: _passwordCon,
       decoration: InputDecoration(
         hintText: 'Password',
+        hintStyle: TextStyle(color: AppColor.placeholder),
         errorText: _passwordError,
+        filled: true,
+        fillColor: AppColor.secondoryBackgroundColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(25),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         suffixIcon: IconButton(
-          icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
-          onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+          icon: Icon(
+            _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+            color: AppColor.subTextColor,
+          ),
+          onPressed: () =>
+              setState(() => _isPasswordVisible = !_isPasswordVisible),
         ),
       ),
       obscureText: !_isPasswordVisible,
@@ -160,10 +309,23 @@ class _SignupPageState extends State<SignupPage> {
       controller: _confirmPasswordCon,
       decoration: InputDecoration(
         hintText: 'Confirm Password',
+        hintStyle: TextStyle(color: AppColor.placeholder),
         errorText: _confirmPasswordError,
+        filled: true,
+        fillColor: AppColor.secondoryBackgroundColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(25),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         suffixIcon: IconButton(
-          icon: Icon(_isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off),
-          onPressed: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+          icon: Icon(
+            _isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+            color: AppColor.subTextColor,
+          ),
+          onPressed: () => setState(
+              () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
         ),
       ),
       obscureText: !_isConfirmPasswordVisible,
@@ -176,7 +338,16 @@ class _SignupPageState extends State<SignupPage> {
       controller: _phoneCon,
       decoration: InputDecoration(
         hintText: 'Phone',
+        hintStyle: TextStyle(color: AppColor.placeholder),
         errorText: _phoneError,
+        filled: true,
+        fillColor: AppColor.secondoryBackgroundColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(25),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
       keyboardType: TextInputType.phone,
       onChanged: (_) => _validateForm(),
@@ -188,7 +359,16 @@ class _SignupPageState extends State<SignupPage> {
       controller: _addressCon,
       decoration: InputDecoration(
         hintText: 'Address',
+        hintStyle: TextStyle(color: AppColor.placeholder),
         errorText: _addressError,
+        filled: true,
+        fillColor: AppColor.secondoryBackgroundColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(25),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
       onChanged: (_) => _validateForm(),
     );
@@ -197,27 +377,41 @@ class _SignupPageState extends State<SignupPage> {
   Widget _createAccountButton(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-        return ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColor.primaryColor, // Use AppColor.primary
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColor.primaryColor, // Green button
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+            ),
+            onPressed: (state is AuthLoading || !_isFormValid)
+                ? null
+                : () {
+                    _validateForm();
+                    if (_isFormValid) {
+                      context.read<AuthBloc>().add(RegisterEvent(
+                            username: _usernameCon.text,
+                            email: _emailCon.text,
+                            password: _passwordCon.text,
+                            phone: _phoneCon.text,
+                            address: _addressCon.text,
+                          ));
+                    }
+                  },
+            child: state is AuthLoading
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Text(
+                    'Sign up',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
-          onPressed: (state is AuthLoading || !_isFormValid)
-              ? null
-              : () {
-                  _validateForm();
-                  if (_isFormValid) {
-                    context.read<AuthBloc>().add(RegisterEvent(
-                      username: _usernameCon.text,
-                      email: _emailCon.text,
-                      password: _passwordCon.text,
-                      phone: _phoneCon.text,
-                      address: _addressCon.text,
-                    ));
-                  }
-                },
-          child: state is AuthLoading
-              ? CircularProgressIndicator(color: AppColor.primaryColor)
-              : const Text('Create Account'),
         );
       },
     );
@@ -227,17 +421,17 @@ class _SignupPageState extends State<SignupPage> {
     return Text.rich(
       TextSpan(
         children: [
-          const TextSpan(
-            text: 'Do you have an account?',
+          TextSpan(
+            text: 'Do you have an account? ',
             style: TextStyle(
-              color: Color(0xff3B4054),
+              color: AppColor.subTextColor,
               fontWeight: FontWeight.w500,
             ),
           ),
           TextSpan(
-            text: ' Sign In',
+            text: 'Sign In',
             style: TextStyle(
-              color: AppColor.primaryColor, // Use AppColor.primary
+              color: AppColor.secondoryColor, // Green link
               fontWeight: FontWeight.w500,
             ),
             recognizer: TapGestureRecognizer()

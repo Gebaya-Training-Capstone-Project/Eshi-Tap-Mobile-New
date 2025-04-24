@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:chapasdk/chapasdk.dart';
 import 'package:data_connection_checker_tv/data_connection_checker.dart';
 import 'package:eshi_tap/core/configs/theme/color_extensions.dart';
@@ -6,11 +5,8 @@ import 'package:eshi_tap/features/Restuarant/presentation/order_tracker_page.dar
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class AddressSelectionPage extends StatefulWidget {
   final double totalAmount;
@@ -40,9 +36,13 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
   final MapController _mapController = MapController();
   bool _isLoading = false;
 
+  // Hardcode the Chapa public key
+  final String chapaPublicKey = 'CHAPUBK_TEST-djffhCEw498HcZcG1oknfi1WMGvQtQlU';
+
   @override
   void initState() {
     super.initState();
+    debugPrint('AddressSelectionPage initialized with totalAmount: ${widget.totalAmount}');
     _loadAddresses();
   }
 
@@ -115,7 +115,6 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
       return;
     }
 
-    // Check connectivity using data_connection_checker_tv
     bool isConnected = await DataConnectionChecker().hasConnection;
     if (!isConnected) {
       _showSnackbar('No internet connection');
@@ -132,93 +131,27 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
     try {
       final customerId = await _getCustomerId();
       final txRef = 'eshi-tap-tx-${customerId}-${DateTime.now().millisecondsSinceEpoch}';
-      debugPrint('Chapa txRef: $txRef, secretKey: ${dotenv.env['CHAPA_PUBLIC_KEY']}');
+      debugPrint('Chapa txRef: $txRef, publicKey: $chapaPublicKey');
 
-      // Test API reachability
-      try {
-        final response = await http
-            .get(Uri.parse('https://api.chapa.co/v1'))
-            .timeout(Duration(seconds: 10));
-        debugPrint('Chapa API test response: ${response.statusCode}');
-      } catch (e) {
-        debugPrint('API test failed: $e');
-      }
+      await Chapa.paymentParameters(
+        context: context,
+        publicKey: chapaPublicKey,
+        currency: 'ETB',
+        amount: widget.totalAmount.toStringAsFixed(2),
+        email: 'customer@example.com',
+        phone: _phoneNumber!.startsWith('+251') ? _phoneNumber!.substring(4) : _phoneNumber!,
+        firstName: 'John',
+        lastName: 'Doe',
+        txRef: txRef,
+        title: 'Order Payment',
+        desc: 'Payment for your food order',
+        nativeCheckout: true,
+        namedRouteFallBack: '/order_tracker?tx_ref=$txRef',
+        showPaymentMethodsOnGridView: true,
+        availablePaymentMethods: ['telebirr', 'cbebirr'],
+      );
 
-      // Try SDK first
-      try {
-        await Chapa.paymentParameters(
-          context: context,
-          publicKey: dotenv.env['CHAPA_PUBLIC_KEY'] ?? 'CHASECK_TEST-GkaAX3iPTDYqOJYOlGMmbkwgHas8YDwv',
-          currency: 'ETB',
-          amount: widget.totalAmount.toStringAsFixed(2),
-          email: 'customer@example.com',
-          phone: _phoneNumber!.startsWith('+251') ? _phoneNumber!.substring(4) : _phoneNumber!,
-          firstName: 'John',
-          lastName: 'Doe',
-          txRef: txRef,
-          title: 'Order Payment',
-          desc: 'Payment for your food order',
-          nativeCheckout: true,
-          namedRouteFallBack: '/address_selection',
-          showPaymentMethodsOnGridView: true,
-          availablePaymentMethods: ['telebirr', 'cbebirr'],
-        );
-        // Payment result handled via namedRouteFallBack
-      } catch (sdkError) {
-        debugPrint('SDK error: $sdkError');
-        // Fallback to manual API call
-        final response = await http.post(
-          Uri.parse('https://api.chapa.co/v1/transaction/initialize'),
-          headers: {
-            'Authorization': 'Bearer ${dotenv.env['CHAPA_PUBLIC_KEY'] ?? 'CHASECK_TEST-GkaAX3iPTDYqOJYOlGMmbkwgHas8YDwv'}',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            'amount': widget.totalAmount.toStringAsFixed(2),
-            'currency': 'ETB',
-            'email': 'customer@example.com',
-            'phone_number': _phoneNumber!.startsWith('+251') ? _phoneNumber!.substring(4) : _phoneNumber!,
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'tx_ref': txRef,
-            'title': 'Order Payment',
-            'description': 'Payment for your food order',
-            'callback_url': 'https://your-callback-url.com', // Replace with your server’s callback URL
-            'return_url': '/address_selection',
-          }),
-        ).timeout(Duration(seconds: 30));
-
-        debugPrint('Manual API response: ${response.statusCode} ${response.body}');
-        final data = jsonDecode(response.body);
-
-        if (response.statusCode == 200 && data['status'] == 'success') {
-          final checkoutUrl = data['data']['checkout_url'];
-          if (await canLaunchUrl(Uri.parse(checkoutUrl))) {
-            await launchUrl(Uri.parse(checkoutUrl));
-            // Simulate success for testing (replace with actual verification)
-            setState(() {
-              _isLoading = false;
-            });
-            widget.onPlaceOrder(selectedAddress!, txRef);
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => OrderTrackerPage(orderId: txRef),
-              ),
-            );
-          } else {
-            _showSnackbar('Could not launch payment URL');
-            setState(() {
-              _isLoading = false;
-            });
-          }
-        } else {
-          _showSnackbar('Payment initialization failed: ${data['message']}');
-          setState(() {
-            _isLoading = false;
-          });
-        }
-      }
+      // Payment result is handled via namedRouteFallBack
     } catch (e) {
       debugPrint('Payment error: $e');
       setState(() {

@@ -84,8 +84,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => MainTabView(),
-                          // builder: (context) => SignupPage(),
+                          // builder: (context) => MainTabView(),
+                          builder: (context) => SignupPage(),
                         ),
                       );
                     },

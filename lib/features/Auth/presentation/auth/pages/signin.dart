@@ -6,7 +6,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-
 class SigninPage extends StatefulWidget {
   const SigninPage({super.key});
 
@@ -23,6 +22,7 @@ class _SigninPageState extends State<SigninPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColor.backgroundColor,
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {
@@ -37,21 +37,121 @@ class _SigninPageState extends State<SigninPage> {
           }
         },
         child: SafeArea(
-          minimum: const EdgeInsets.only(top: 100, right: 16, left: 16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _signin(),
-              const SizedBox(height: 50),
-              _usernameField(),
-              const SizedBox(height: 20),
-              _password(),
-              const SizedBox(height: 60),
-              _loginButton(context),
-              const SizedBox(height: 20),
-              _signupText(context),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Header with logo
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  color: AppColor.primaryColor, // Green header background
+                  child: Center(
+                    child: Image.asset(
+                      'assets/logo.png',
+                      height: 80,
+                    ),
+                  ),
+                ),
+                // Form container with rounded corners
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColor.backgroundColor,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(100),
+                      topRight: Radius.circular(120),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 30),
+                      // Sign In Title
+                      Text(
+                        'Sign In',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: AppColor.primaryTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Subtitle
+                      Text(
+                        'Please sign in to continue',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColor.subTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      // Form Fields
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: [
+                            _usernameField(),
+                            const SizedBox(height: 16),
+                            _password(),
+                            const SizedBox(height: 30),
+                            _loginButton(context),
+                            const SizedBox(height: 20),
+                            // Or sign in with Google
+                            Row(
+                              children: [
+                                Expanded(child: Divider(color: AppColor.subTextColor)),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text(
+                                    'Or sign in with',
+                                    style: TextStyle(color: AppColor.subTextColor),
+                                  ),
+                                ),
+                                Expanded(child: Divider(color: AppColor.subTextColor)),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                // Add Google Sign-In logic here
+                              },
+                              icon: Image.asset(
+                                'assets/google_logo.png',
+                                height: 24,
+                              ),
+                              label: Text(
+                                'Google',
+                                style: TextStyle(color: AppColor.primaryTextColor),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: AppColor.subTextColor),
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            _signupText(context),
+                            const SizedBox(height: 20),
+                            // Copyright notice
+                            Text(
+                              '© 2025 ALL RIGHTS RESERVED',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColor.subTextColor,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -59,12 +159,12 @@ class _SigninPageState extends State<SigninPage> {
   }
 
   Widget _signin() {
-    return const Text(
+    return Text(
       'Sign In',
       style: TextStyle(
-        color: Color(0xff2A4ECA),
+        fontSize: 28,
         fontWeight: FontWeight.bold,
-        fontSize: 32,
+        color: AppColor.primaryTextColor,
       ),
     );
   }
@@ -72,7 +172,17 @@ class _SigninPageState extends State<SigninPage> {
   Widget _usernameField() {
     return TextField(
       controller: _usernameCon,
-      decoration: const InputDecoration(hintText: 'Username'),
+      decoration: InputDecoration(
+        hintText: 'Username',
+        hintStyle: TextStyle(color: AppColor.placeholder),
+        filled: true,
+        fillColor: AppColor.secondoryBackgroundColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(25),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      ),
     );
   }
 
@@ -81,8 +191,19 @@ class _SigninPageState extends State<SigninPage> {
       controller: _passwordCon,
       decoration: InputDecoration(
         hintText: 'Password',
+        hintStyle: TextStyle(color: AppColor.placeholder),
+        filled: true,
+        fillColor: AppColor.secondoryBackgroundColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(25),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         suffixIcon: IconButton(
-          icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+          icon: Icon(
+            _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+            color: AppColor.subTextColor,
+          ),
           onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
         ),
       ),
@@ -93,21 +214,35 @@ class _SigninPageState extends State<SigninPage> {
   Widget _loginButton(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-        return ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColor.primaryColor, // Use AppColor.primary
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColor.primaryColor, // Green button
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+            ),
+            onPressed: state is AuthLoading
+                ? null
+                : () {
+                    context.read<AuthBloc>().add(LoginEvent(
+                          _usernameCon.text,
+                          _passwordCon.text,
+                        ));
+                  },
+            child: state is AuthLoading
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Text(
+                    'Login',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
-          onPressed: state is AuthLoading
-              ? null
-              : () {
-                  context.read<AuthBloc>().add(LoginEvent(
-                    _usernameCon.text,
-                    _passwordCon.text,
-                  ));
-                },
-          child: state is AuthLoading
-              ? CircularProgressIndicator(color: AppColor.primaryColor) // Use AppColor.primary
-              : const Text('Login'),
         );
       },
     );
@@ -117,17 +252,17 @@ class _SigninPageState extends State<SigninPage> {
     return Text.rich(
       TextSpan(
         children: [
-          const TextSpan(
-            text: "Don't you have an account?",
+          TextSpan(
+            text: "Don't you have an account? ",
             style: TextStyle(
-              color: Color(0xff3B4054),
+              color: AppColor.subTextColor,
               fontWeight: FontWeight.w500,
             ),
           ),
           TextSpan(
-            text: ' Sign Up',
+            text: 'Sign Up',
             style: TextStyle(
-              color: AppColor.primaryColor, // Use AppColor.primary
+              color: AppColor.secondoryColor, // Orange link
               fontWeight: FontWeight.w500,
             ),
             recognizer: TapGestureRecognizer()

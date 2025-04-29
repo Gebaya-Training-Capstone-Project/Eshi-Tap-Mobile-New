@@ -3,5 +3,8 @@ import 'package:eshi_tap/core/error/failures.dart';
 import 'package:eshi_tap/features/Restuarant/domain/entity/meal.dart';
 
 abstract class MealRepository {
-  Future<Either<Failure, List<Meal>>> getAllMeals();
+  Future<Either<Failure, List<Meal>>> getAllMeals({
+    String searchQuery = '',
+    bool isFasting = false,
+  });
 }

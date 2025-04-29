@@ -126,6 +126,9 @@ class Meal {
   final List<String>? categories;
   final int? estimatedDeliveryTime;
   final List<String>? allergens;
+  // New fields
+  final String? restaurantId;
+  final bool? isFasting;
 
   Meal({
     required this.id,
@@ -147,6 +150,8 @@ class Meal {
     this.categories,
     this.estimatedDeliveryTime,
     this.allergens,
+    this.restaurantId,
+    this.isFasting,
   });
 
   Map<String, dynamic> toJson() {
@@ -170,6 +175,8 @@ class Meal {
       'categories': categories,
       'estimatedDeliveryTime': estimatedDeliveryTime,
       'allergens': allergens,
+      'restaurantId': restaurantId,
+      'isFasting': isFasting,
     };
   }
 
@@ -208,6 +215,8 @@ class Meal {
       allergens: json['allergens'] != null
           ? List<String>.from(json['allergens'])
           : null,
+      restaurantId: json['restaurantId'],
+      isFasting: json['isFasting'],
     );
   }
 }

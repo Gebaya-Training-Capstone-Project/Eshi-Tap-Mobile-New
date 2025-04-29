@@ -20,7 +20,10 @@ class MealModel {
   final List<String>? categories;
   final int? estimatedDeliveryTime;
   final Map<String, dynamic> ratingsMap;
-  final List<String>? allergens; // New field for allergens
+  final List<String>? allergens;
+  // New fields
+  final String? restaurantId;
+  final bool? isFasting;
 
   MealModel({
     required this.id,
@@ -43,6 +46,8 @@ class MealModel {
     this.estimatedDeliveryTime,
     required this.ratingsMap,
     this.allergens,
+    this.restaurantId,
+    this.isFasting,
   });
 
   factory MealModel.fromJson(Map<String, dynamic> json) {
@@ -92,7 +97,11 @@ class MealModel {
       isFavorited: json['isFavorited'] as bool?,
       categories: (json['categories'] as List?)?.cast<String>(),
       estimatedDeliveryTime: json['estimatedDeliveryTime'] as int?,
-      allergens: (json['allergens'] as List?)?.cast<String>(), // New field
+      allergens: (json['allergens'] as List?)?.cast<String>(),
+      restaurantId: json['restaurant'] != null && json['restaurant'] is Map
+          ? json['restaurant']['_id'] as String?
+          : null,
+      isFasting: json['isFasting'] as bool?,
     );
   }
 }
@@ -119,6 +128,8 @@ extension MealModelX on MealModel {
       categories: categories,
       estimatedDeliveryTime: estimatedDeliveryTime,
       allergens: allergens,
+      restaurantId: restaurantId,
+      isFasting: isFasting,
     );
   }
 }

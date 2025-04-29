@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:chapasdk/chapasdk.dart';
 import 'package:data_connection_checker_tv/data_connection_checker.dart';
 import 'package:eshi_tap/core/configs/theme/color_extensions.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class AddressSelectionPage extends StatefulWidget {
   final double totalAmount;
@@ -39,6 +41,25 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
   // Hardcode the Chapa public key
   final String chapaPublicKey = 'CHAPUBK_TEST-djffhCEw498HcZcG1oknfi1WMGvQtQlU';
 
+  // Hardcode order creation parameters
+  final String hardcodedCustomerId = '67e59c471ab3bebcae1a7730';
+  final String hardcodedRestaurantId = '67e6fcefc9bc65ae4a2c4f8e';
+  final String hardcodedToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3ZjNkZGI1ZDg0MjY5YjY0NjNjMGVkZSIsInJvbGUiOiJjdXN0b21lciIsImVtYWlsIjoibmViaW1vYmlsZUBnbWFpbC5jb20iLCJpYXQiOjE3NDU2MDMwODEsImV4cCI6MTc0NTY4OTQ4MX0.8-P_Ethxs99rZyGEPgRYAlyz1Vo5mJF_ViNodnKXDUk';
+  final List<Map<String, dynamic>> hardcodedItems = [
+    {
+      'item': '6618f8209b4e2e3b7e6c2a75',
+      'quantity': 2,
+      'price': 8.5,
+    },
+    {
+      'item': '6618f8309b4e2e3b7e6c2a7d',
+      'quantity': 1,
+      'price': 12.0,
+    },
+  ];
+  final double hardcodedTotalAmount = 29.0;
+  final String hardcodedOrderStatus = 'delivered';
+
   @override
   void initState() {
     super.initState();
@@ -55,8 +76,27 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
   }
 
   Future<String> _getCustomerId() async {
+    // Hardcode customer ID for order creation
+    return hardcodedCustomerId;
+  }
+
+  Future<void> _storeOrderDetails(String txRef) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('customer_id') ?? 'default_customer_id';
+    final orderDetails = {
+      'restaurantId': hardcodedRestaurantId,
+      'customerId': hardcodedCustomerId,
+      'token': hardcodedToken,
+      'cartItems': hardcodedItems,
+      'totalAmount': hardcodedTotalAmount,
+      'orderStatus': hardcodedOrderStatus,
+      'txRef': txRef,
+      'deliveryAddress': selectedAddress,
+      'phoneNumber': _phoneNumber,
+    };
+    debugPrint('Storing order details: $orderDetails');
+    await prefs.setString('pending_order', jsonEncode(orderDetails));
+    final storedData = prefs.getString('pending_order');
+    debugPrint('Stored order details in SharedPreferences: $storedData');
   }
 
   Future<void> _addNewAddress(String address) async {
@@ -132,6 +172,8 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
       final customerId = await _getCustomerId();
       final txRef = 'eshi-tap-tx-${customerId}-${DateTime.now().millisecondsSinceEpoch}';
       debugPrint('Chapa txRef: $txRef, publicKey: $chapaPublicKey');
+
+      await _storeOrderDetails(txRef);
 
       await Chapa.paymentParameters(
         context: context,

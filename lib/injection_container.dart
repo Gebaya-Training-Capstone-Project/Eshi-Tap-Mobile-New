@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-
 import 'package:eshi_tap/features/Auth/data/repository/auth.dart';
 import 'package:eshi_tap/features/Auth/data/source/auth_api_service.dart';
+import 'package:eshi_tap/features/Auth/data/source/auth_local_service.dart'; // Add this import
 import 'package:eshi_tap/features/Auth/domain/repository/auth.dart';
 import 'package:eshi_tap/features/Auth/domain/usecases/get_user.dart';
 import 'package:eshi_tap/features/Auth/domain/usecases/logout.dart';
@@ -52,15 +52,16 @@ Future<void> init() async {
   // Data sources
   sl.registerLazySingleton(() => AuthRemoteDataSource(sl()));
   sl.registerLazySingleton<RestaurantRemoteDataSource>(
-    () => RestaurantRemoteDataSource(sl()),
+    () => RestaurantRemoteDataSourceImpl(sl()),
   );
   sl.registerLazySingleton<MealRemoteDataSource>(
     () => MealRemoteDataSourceImpl(sl()),
   );
+  sl.registerLazySingleton<AuthLocalService>(() => AuthLocalServiceImpl()); // Register AuthLocalService
 
   // Repositories
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(sl(), secureStorage: sl()),
+    () => AuthRepositoryImpl(sl(), secureStorage: sl(), localService: sl()), // Pass localService
   );
   sl.registerLazySingleton<RestaurantRepository>(
     () => RestaurantRepositoryImpl(sl()),

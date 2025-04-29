@@ -1,10 +1,10 @@
 import 'package:eshi_tap/core/configs/theme/color_extensions.dart';
-
 import 'package:eshi_tap/features/Restuarant/domain/entity/meal.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/bloc/restaurant_bloc.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/restaurant_details_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
 
 class RestaurantPage extends StatelessWidget {
   const RestaurantPage({super.key});
@@ -14,7 +14,6 @@ class RestaurantPage extends StatelessWidget {
     if (description.length <= maxLength) return description;
     return '${description.substring(0, maxLength)}...';
   }
-  
 
   // Helper method to calculate the average rating of a restaurant based on its meals
   double calculateAverageRating(List<Meal> meals) {
@@ -31,12 +30,90 @@ class RestaurantPage extends StatelessWidget {
     return count > 0 ? (totalRating / count) : 0.0;
   }
 
+  Widget _buildRestaurantSkeleton(BuildContext context) {
+    return ListView.builder(
+      itemCount: 3, // Show 3 skeleton items to simulate loading
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Shimmer.fromColors(
+            baseColor: AppColor.placeholder.withOpacity(0.5),
+            highlightColor: AppColor.placeholder.withOpacity(0.3),
+            child: Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: AppColor.placeholder.withOpacity(0.5),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 120,
+                          height: 16,
+                          color: AppColor.placeholder.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          width: double.infinity,
+                          height: 36, // Approximate height for 2 lines of description
+                          color: AppColor.placeholder.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 16,
+                              color: AppColor.placeholder.withOpacity(0.5),
+                            ),
+                            const SizedBox(width: 12),
+                            Container(
+                              width: 60,
+                              height: 16,
+                              color: AppColor.placeholder.withOpacity(0.5),
+                            ),
+                            const SizedBox(width: 12),
+                            Container(
+                              width: 60,
+                              height: 16,
+                              color: AppColor.placeholder.withOpacity(0.5),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<RestaurantBloc, RestaurantState>(
       builder: (context, state) {
         if (state is RestaurantLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return _buildRestaurantSkeleton(context);
         } else if (state is RestaurantLoaded) {
           final restaurants = state.restaurants;
 
@@ -50,7 +127,7 @@ class RestaurantPage extends StatelessWidget {
               final restaurant = restaurants[index];
 
               // Handle the default image safely
-              String imageUrl = 'https://via.placeholder.com/150'; // Fallback placeholder image
+              String imageUrl = 'https://placehold.co/150x90?text=Restauarnts&font=raleway'; // Fallback placeholder image
               if (restaurant.restaurantImages.isNotEmpty) {
                 final defaultImage = restaurant.restaurantImages.firstWhere(
                   (image) => image.defaultImage,
@@ -189,7 +266,24 @@ class RestaurantPage extends StatelessWidget {
             },
           );
         } else if (state is RestaurantError) {
-          return Center(child: Text(state.message));
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(state.message),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    context.read<RestaurantBloc>().add(FetchRestaurants(searchQuery: ''));
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColor.primaryColor,
+                  ),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
         }
         return const Center(child: Text('No restaurants found'));
       },

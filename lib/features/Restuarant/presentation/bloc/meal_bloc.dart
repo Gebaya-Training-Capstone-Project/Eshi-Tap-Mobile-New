@@ -4,7 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class MealEvent {}
 
-class FetchMeals extends MealEvent {}
+class FetchMeals extends MealEvent {
+  final String searchQuery;
+  final bool isFasting;
+
+  FetchMeals({this.searchQuery = '', this.isFasting = false});
+}
 
 abstract class MealState {}
 
@@ -28,7 +33,10 @@ class MealBloc extends Bloc<MealEvent, MealState> {
   MealBloc(this.getAllMeals) : super(MealLoading()) {
     on<FetchMeals>((event, emit) async {
       emit(MealLoading());
-      final result = await getAllMeals();
+      final result = await getAllMeals(
+        searchQuery: event.searchQuery,
+        isFasting: event.isFasting,
+      );
       result.fold(
         (failure) => emit(MealError('Failed to load meals')),
         (meals) => emit(MealLoaded(meals)),

@@ -8,6 +8,7 @@ import 'package:eshi_tap/features/Restuarant/presentation/home_page.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/menu_page.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/bloc/restaurant_bloc.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/bloc/meal_bloc.dart';
+import 'package:eshi_tap/features/Restuarant/presentation/order_list_page.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/order_tracker_page.dart';
 import 'package:eshi_tap/injection_container.dart';
 import 'package:flutter/material.dart';
@@ -94,7 +95,8 @@ class _MainTabViewState extends State<MainTabView> {
             return Scaffold(
               body: PageStorage(bucket: storageBucket, child: selectPageView!),
               backgroundColor: const Color(0xfff5f5f5),
-              floatingActionButtonLocation: FloatingActionButtonLocation.miniCenterDocked,
+              floatingActionButtonLocation:
+                  FloatingActionButtonLocation.miniCenterDocked,
               floatingActionButton: SizedBox(
                 width: 60,
                 height: 60,
@@ -109,7 +111,9 @@ class _MainTabViewState extends State<MainTabView> {
                     }
                   },
                   shape: const CircleBorder(),
-                  backgroundColor: selctTab == 2 ? AppColor.primaryColor : AppColor.placeholder,
+                  backgroundColor: selctTab == 2
+                      ? AppColor.primaryColor
+                      : AppColor.placeholder,
                   child: const Icon(Icons.home, color: Colors.white, size: 30),
                 ),
               ),
@@ -157,14 +161,12 @@ class _MainTabViewState extends State<MainTabView> {
                       ),
                       const SizedBox(width: 40, height: 40),
                       TabButton(
-                        title: "Order Tracker",
+                        title: "Orders",
                         icon: Icons.track_changes,
                         onTap: () {
                           if (selctTab != 3) {
                             selctTab = 3;
-                            selectPageView = OrderTrackerPage(
-                              orderId: recentOrderId ?? '',
-                            );
+                            selectPageView = const OrderListPage();
                           }
                           if (mounted) {
                             setState(() {});

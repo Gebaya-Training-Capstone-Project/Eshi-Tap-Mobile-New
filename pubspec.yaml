@@ -63,6 +63,9 @@ dependencies:
   flutter_inappwebview: ^6.0.0
   chapasdk: ^0.0.7
   flutter_dotenv: ^5.1.0
+  http_client: ^1.5.3
+  shimmer: ^3.0.0
+  geocoding: ^2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -98,6 +101,7 @@ flutter:
     - assets/animation/delivery_animation4.json
     - assets/profilePizza.svg
     - .env
+    - assets/food_placeholder.png
 
   #   - images/a_dot_ham.jpeg
 

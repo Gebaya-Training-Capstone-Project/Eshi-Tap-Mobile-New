@@ -34,6 +34,7 @@ class MyApp extends StatelessWidget {
               debugPrint('totalAmount type: ${totalAmountValue.runtimeType}, value: $totalAmountValue');
               if (totalAmountValue is double) {
                 totalAmount = totalAmountValue;
+
               } else if (totalAmountValue is String) {
                 totalAmount = double.tryParse(totalAmountValue) ?? 0.0;
               } else if (totalAmountValue is Map && totalAmountValue.containsKey('value')) {

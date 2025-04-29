@@ -1,4 +1,5 @@
 import 'package:eshi_tap/features/Auth/presentation/auth/pages/profile_info_page.dart';
+import 'package:eshi_tap/features/Auth/presentation/auth/pages/signin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:eshi_tap/core/configs/theme/color_extensions.dart';
@@ -116,7 +117,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                 final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => PersonalInformationPage(
+                                    builder: (context) =>
+                                        PersonalInformationPage(
                                       name: name,
                                       phoneNumber: phoneNumber,
                                       emailAddress: emailAddress,
@@ -189,11 +191,12 @@ class _ProfilePageState extends State<ProfilePage> {
                       icon: Icons.logout,
                       title: 'Logout',
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content:
-                                Text('Logout functionality to be implemented'),
-                          ),
+                        // Handle logout action here
+                        // For example, navigate to the login page or clear user data
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => SigninPage()),
+                          (route) => false,
                         );
                       },
                     ),

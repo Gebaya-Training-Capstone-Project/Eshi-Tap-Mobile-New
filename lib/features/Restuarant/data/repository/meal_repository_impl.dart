@@ -5,20 +5,26 @@ import 'package:eshi_tap/features/Restuarant/data/sources/meal_remote_datasource
 import 'package:eshi_tap/features/Restuarant/domain/entity/meal.dart';
 import 'package:eshi_tap/features/Restuarant/domain/repsoitory/meal_repository.dart';
 
-
 class MealRepositoryImpl implements MealRepository {
   final MealRemoteDataSource remoteDataSource;
 
   MealRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<Either<Failure, List<Meal>>> getAllMeals() async {
+  Future<Either<Failure, List<Meal>>> getAllMeals({
+    String searchQuery = '',
+    bool isFasting = false,
+  }) async {
     try {
-      final mealModels = await remoteDataSource.getAllMeals();
+      final mealModels = await remoteDataSource.getAllMeals(
+        searchQuery: searchQuery,
+        isFasting: isFasting,
+      );
       final meals = mealModels.map((model) => model.toEntity()).toList();
       return Right(meals);
     } catch (e) {
-      return Left(ServerFailure(message: 'Failed to fetch meals'));
+      print('Error fetching meals: $e');
+      return Left(ServerFailure(message: 'Failed to fetch meals: $e'));
     }
   }
 }

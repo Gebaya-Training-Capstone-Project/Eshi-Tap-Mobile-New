@@ -1,7 +1,7 @@
-
-
 import 'package:eshi_tap/features/Restuarant/data/model/meals_model.dart';
 import 'package:eshi_tap/features/Restuarant/domain/entity/restaurant.dart';
+
+
 
 class RestaurantModel {
   final String id;
@@ -15,7 +15,7 @@ class RestaurantModel {
   final String createdAt;
   final String updatedAt;
   final String userId;
-  final List<MealModel>? meals; // New field for meals
+  final List<MealModel>? meals; // Changed to List<MealModel>
 
   RestaurantModel({
     required this.id,
@@ -46,14 +46,12 @@ class RestaurantModel {
               ))
           .toList(),
       latitude: (json['latitude'] as num).toDouble(),
-      longitude: (json['longtiude'] as num).toDouble(),
+      longitude: (json['longtiude'] as num).toDouble(), // Note: Typo in API ("longtiude" instead of "longitude")
       status: json['status'] as bool,
       createdAt: json['createdAt'] as String,
       updatedAt: json['updatedAt'] as String,
       userId: json['userId'] as String,
-      meals: (json['meals'] as List?)
-          ?.map((mealJson) => MealModel.fromJson(mealJson))
-          .toList(),
+      meals: (json['meals'] as List?)?.map((meal) => MealModel.fromJson(meal as Map<String, dynamic>)).toList(),
     );
   }
 }
@@ -74,6 +72,5 @@ extension RestaurantModelX on RestaurantModel {
       userId: userId,
       meals: meals?.map((meal) => meal.toEntity()).toList(),
     );
-  
   }
 }

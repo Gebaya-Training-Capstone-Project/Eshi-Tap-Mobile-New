@@ -1,19 +1,19 @@
-part of 'restaurant_bloc.dart';
+// part of 'restaurant_bloc.dart';
 
-abstract class RestaurantState {}
+// abstract class RestaurantState {}
 
-class RestaurantInitial extends RestaurantState {}
+// class RestaurantInitial extends RestaurantState {}
 
-class RestaurantLoading extends RestaurantState {}
+// class RestaurantLoading extends RestaurantState {}
 
-class RestaurantLoaded extends RestaurantState {
-  final List<Restaurant> restaurants;
+// class RestaurantLoaded extends RestaurantState {
+//   final List<Restaurant> restaurants;
 
-  RestaurantLoaded(this.restaurants);
-}
+//   RestaurantLoaded(this.restaurants);
+// }
 
-class RestaurantError extends RestaurantState {
-  final String message;
+// class RestaurantError extends RestaurantState {
+//   final String message;
 
-  RestaurantError(this.message);
-}
+//   RestaurantError(this.message);
+// }

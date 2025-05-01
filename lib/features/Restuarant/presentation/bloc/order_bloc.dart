@@ -1,93 +1,45 @@
-import 'dart:io';
+import 'package:bloc/bloc.dart';
+import 'package:equatable/equatable.dart';
+import 'package:eshi_tap/features/Restuarant/domain/entity/order.dart';
+import 'package:eshi_tap/features/Restuarant/domain/usecase/create_order.dart';
+import 'package:eshi_tap/features/Restuarant/domain/usecase/get_order_by_id.dart';
 
-import 'package:dio/dio.dart';
-
-import 'package:eshi_tap/features/Restuarant/presentation/bloc/order_event.dart';
-import 'package:eshi_tap/features/Restuarant/presentation/bloc/order_state.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-
-
+part 'order_event.dart';
+part 'order_state.dart';
 
 class OrderBloc extends Bloc<OrderEvent, OrderState> {
-  OrderBloc() : super(OrderState.initial()) {
-    on<PlaceOrder>(_onPlaceOrder);
-    on<PaymentSuccessful>(_onPaymentSuccessful);
+  final CreateOrder createOrder;
+  final GetOrderById getOrderById;
+
+  OrderBloc(this.createOrder, this.getOrderById) : super(OrderInitial()) {
+    on<CreateOrderEvent>(_onCreateOrder);
+    on<FetchOrderEvent>(_onFetchOrder);
   }
 
-  Future<void> _onPlaceOrder(
-    PlaceOrder event,
-    Emitter<OrderState> emit,
-  ) async {
-    try {
-      emit(state.copyWith(paymentStatus: PaymentStatus.loading));
-
-      const String orderApiUrl = 'YOUR_ORDER_API_URL'; // Replace with actual URL
-      const String customerId = 'YOUR_CUSTOMER_ID';
-      const String restaurantId = 'YOUR_RESTAURANT_ID';
-
-      final response = await http.post(
-        Uri.parse(orderApiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'restaurant': restaurantId,
-          'customer': customerId,
-          'items': event.cartItems,
-          'orderStatus': 'pending',
-          'totalAmount': event.totalAmount,
-          'deliveryAddress': event.address,
-        }),
-      );
-
-      if (response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-        final paymentUrl = data['paymentUrl'] ?? '';
-        final transactionId = data['transactionId'] ?? 'tx_${DateTime.now().millisecondsSinceEpoch}';
-        emit(state.copyWith(
-          paymentStatus: PaymentStatus.loaded,
-          paymentUrl: paymentUrl,
-          transactionId: transactionId,
-        ));
-      } else {
-        throw Exception('Failed to initiate payment: ${response.body}');
-      }
-    } catch (e) {
-      String errorMessage = 'Something went wrong';
-      if (e is DioException) {
-        if (e.error is SocketException) {
-          errorMessage = "No Internet Connection!";
-        } else if (e.type == DioExceptionType.connectionTimeout ||
-            e.type == DioExceptionType.receiveTimeout ||
-            e.type == DioExceptionType.sendTimeout) {
-          errorMessage = "Request timeout";
-        } else if (e.type == DioExceptionType.badResponse) {
-          final response = e.response;
-          if (response != null && response.data != null) {
-            try {
-              final Map responseData = response.data as Map;
-              errorMessage = responseData['msg'] ?? 'Something went wrong';
-            } catch (_) {
-              errorMessage = 'Something went wrong';
-            }
-          }
-        }
-      } else {
-        errorMessage = e.toString();
-      }
-      emit(state.copyWith(
-        paymentStatus: PaymentStatus.error,
-        errorMessage: errorMessage,
-      ));
-    }
+  Future<void> _onCreateOrder(CreateOrderEvent event, Emitter<OrderState> emit) async {
+    emit(OrderLoading());
+    final result = await createOrder(
+      restaurantId: event.restaurantId,
+      customerId: event.customerId,
+      items: event.items,
+      orderStatus: event.orderStatus,
+      totalAmount: event.totalAmount,
+      deliveryAddress: event.deliveryAddress,
+      phoneNumber: event.phoneNumber,
+      txRef: event.txRef,
+    );
+    result.fold(
+      (failure) => emit(OrderError(failure.message)),
+      (order) => emit(OrderCreated(order)),
+    );
   }
 
-  void _onPaymentSuccessful(
-    PaymentSuccessful event,
-    Emitter<OrderState> emit,
-  ) {
-    emit(state.copyWith(paymentStatus: PaymentStatus.success));
+  Future<void> _onFetchOrder(FetchOrderEvent event, Emitter<OrderState> emit) async {
+    emit(OrderLoading());
+    final result = await getOrderById(event.orderId);
+    result.fold(
+      (failure) => emit(OrderError(failure.message)),
+      (order) => emit(OrderLoaded(order)),
+    );
   }
 }

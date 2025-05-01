@@ -1,25 +1,51 @@
-import 'package:equatable/equatable.dart';
+part of 'order_bloc.dart';
 
-sealed class OrderEvent extends Equatable {
+abstract class OrderEvent extends Equatable {
   const OrderEvent();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
-class PlaceOrder extends OrderEvent {
-  final String address;
+class CreateOrderEvent extends OrderEvent {
+  final String restaurantId;
+  final String customerId;
+  final List<Map<String, dynamic>> items;
+  final String orderStatus;
   final double totalAmount;
-  final List<Map<String, dynamic>> cartItems;
+  final String deliveryAddress;
+  final String phoneNumber;
+  final String txRef;
 
-  const PlaceOrder({
-    required this.address,
+  const CreateOrderEvent({
+    required this.restaurantId,
+    required this.customerId,
+    required this.items,
+    required this.orderStatus,
     required this.totalAmount,
-    required this.cartItems,
+    required this.deliveryAddress,
+    required this.phoneNumber,
+    required this.txRef,
   });
 
   @override
-  List<Object> get props => [address, totalAmount, cartItems];
+  List<Object?> get props => [
+        restaurantId,
+        customerId,
+        items,
+        orderStatus,
+        totalAmount,
+        deliveryAddress,
+        phoneNumber,
+        txRef,
+      ];
 }
 
-class PaymentSuccessful extends OrderEvent {}
+class FetchOrderEvent extends OrderEvent {
+  final String orderId;
+
+  const FetchOrderEvent(this.orderId);
+
+  @override
+  List<Object> get props => [orderId];
+}

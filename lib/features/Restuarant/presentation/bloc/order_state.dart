@@ -1,43 +1,39 @@
-import 'package:equatable/equatable.dart';
+part of 'order_bloc.dart';
 
-enum PaymentStatus { initial, loading, loaded, success, error }
-
-class OrderState extends Equatable {
-  final PaymentStatus paymentStatus;
-  final String errorMessage;
-  final String paymentUrl;
-  final String transactionId;
-
-  const OrderState({
-    required this.paymentStatus,
-    required this.errorMessage,
-    required this.paymentUrl,
-    required this.transactionId,
-  });
-
-  factory OrderState.initial() {
-    return const OrderState(
-      paymentStatus: PaymentStatus.initial,
-      errorMessage: '',
-      paymentUrl: '',
-      transactionId: '',
-    );
-  }
+abstract class OrderState extends Equatable {
+  const OrderState();
 
   @override
-  List<Object> get props => [paymentStatus, errorMessage, paymentUrl, transactionId];
+  List<Object?> get props => [];
+}
 
-  OrderState copyWith({
-    PaymentStatus? paymentStatus,
-    String? errorMessage,
-    String? paymentUrl,
-    String? transactionId,
-  }) {
-    return OrderState(
-      paymentStatus: paymentStatus ?? this.paymentStatus,
-      errorMessage: errorMessage ?? this.errorMessage,
-      paymentUrl: paymentUrl ?? this.paymentUrl,
-      transactionId: transactionId ?? this.transactionId,
-    );
-  }
+class OrderInitial extends OrderState {}
+
+class OrderLoading extends OrderState {}
+
+class OrderCreated extends OrderState {
+  final Order order;
+
+  const OrderCreated(this.order);
+
+  @override
+  List<Object?> get props => [order];
+}
+
+class OrderLoaded extends OrderState {
+  final Order order;
+
+  const OrderLoaded(this.order);
+
+  @override
+  List<Object?> get props => [order];
+}
+
+class OrderError extends OrderState {
+  final String message;
+
+  const OrderError(this.message);
+
+  @override
+  List<Object?> get props => [message];
 }

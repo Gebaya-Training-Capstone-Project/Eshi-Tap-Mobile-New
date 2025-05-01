@@ -9,7 +9,7 @@ import 'package:eshi_tap/features/Restuarant/presentation/menu_page.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/bloc/restaurant_bloc.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/bloc/meal_bloc.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/order_list_page.dart';
-import 'package:eshi_tap/features/Restuarant/presentation/order_tracker_page.dart';
+import 'package:eshi_tap/features/Restuarant/presentation/order_tracker_page.dart' as order_tracker;
 import 'package:eshi_tap/injection_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

@@ -4,7 +4,7 @@ abstract class OrderEvent extends Equatable {
   const OrderEvent();
 
   @override
-  List<Object?> get props => [];
+  List<Object> get props => [];
 }
 
 class CreateOrderEvent extends OrderEvent {
@@ -13,9 +13,8 @@ class CreateOrderEvent extends OrderEvent {
   final List<Map<String, dynamic>> items;
   final String orderStatus;
   final double totalAmount;
-  final String deliveryAddress;
-  final String phoneNumber;
-  final String txRef;
+  final double latitude;
+  final double longitude;
 
   const CreateOrderEvent({
     required this.restaurantId,
@@ -23,21 +22,19 @@ class CreateOrderEvent extends OrderEvent {
     required this.items,
     required this.orderStatus,
     required this.totalAmount,
-    required this.deliveryAddress,
-    required this.phoneNumber,
-    required this.txRef,
+    required this.latitude,
+    required this.longitude,
   });
 
   @override
-  List<Object?> get props => [
+  List<Object> get props => [
         restaurantId,
         customerId,
         items,
         orderStatus,
         totalAmount,
-        deliveryAddress,
-        phoneNumber,
-        txRef,
+        latitude,
+        longitude,
       ];
 }
 
@@ -49,3 +46,14 @@ class FetchOrderEvent extends OrderEvent {
   @override
   List<Object> get props => [orderId];
 }
+
+class StartOrderUpdates extends OrderEvent {
+  final String orderId;
+
+  const StartOrderUpdates(this.orderId);
+
+  @override
+  List<Object> get props => [orderId];
+}
+
+class StopOrderUpdates extends OrderEvent {}

@@ -188,7 +188,7 @@ class _FavoritesPageState extends State<FavoritesPage> with SingleTickerProvider
                                     ),
                                   ),
                                   subtitle: Text(
-                                    _trimDescription(restaurant.description, 100),
+                                    _trimDescription(restaurant.description, 40), // Trimmed to 40 characters
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: AppColor.subTextColor,
@@ -270,7 +270,7 @@ class _FavoritesPageState extends State<FavoritesPage> with SingleTickerProvider
                                     ),
                                   ),
                                   subtitle: Text(
-                                    meal.description ?? 'No description',
+                                    _trimDescription(meal.description ?? 'No description', 40), // Trimmed to 40 characters
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: AppColor.subTextColor,

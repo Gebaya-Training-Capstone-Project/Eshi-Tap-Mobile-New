@@ -9,6 +9,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:eshi_tap/injection_container.dart' as di;
 import 'package:eshi_tap/features/Restuarant/presentation/address_selection_page.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/order_tracker_page.dart';
+import 'package:eshi_tap/features/Restuarant/presentation/order_confirmation_page.dart';
+import 'package:dio/dio.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   HttpOverrides.global = MyHttpOverrides();
@@ -34,7 +38,7 @@ class MyApp extends StatelessWidget {
           create: (_) => di.sl<MealBloc>(),
         ),
         BlocProvider<OrderBloc>(
-          create: (_) => di.sl<OrderBloc>(),
+          create: (_) => OrderBloc(dio: di.sl<Dio>()),
         ),
       ],
       child: MaterialApp(
@@ -65,7 +69,7 @@ class MyApp extends StatelessWidget {
               builder: (context) => AddressSelectionPage(
                 totalAmount: totalAmount,
                 cartItems: args?['cartItems'] ?? [],
-                restaurantId: args?['restaurantId'] ?? 'default_id',
+                restaurantId: args?['restaurantId'] ?? '681322cb7a5591e3a40ee78d',
                 onPlaceOrder: args?['onPlaceOrder'] ??
                     (String address, String reference) {
                       debugPrint('Order placed at $address with ref $reference');
@@ -76,17 +80,132 @@ class MyApp extends StatelessWidget {
                 'paymentResult': paymentResult,
               }),
             );
-          } else if (settings.name!.startsWith('/order_tracker')) {
-            final uri = Uri.parse(settings.name!);
-            final txRef = uri.queryParameters['tx_ref'] ?? 'unknown_tx_ref';
+          } else if (settings.name == '/order_confirmation') {
+            final args = settings.arguments as Map<String, dynamic>?;
+            debugPrint('Navigation arguments to OrderConfirmationPage: $args');
+            final chapaTxRef = args?['transactionReference']?.toString() ?? 'unknown_tx_ref';
             return MaterialPageRoute(
-              builder: (context) => OrderTrackerPage(orderId: txRef),
+              builder: (context) => OrderConfirmationLoadingPage(chapaTxRef: chapaTxRef),
+            );
+          } else if (settings.name == '/order_tracker') {
+            final args = settings.arguments as Map<String, dynamic>?;
+            final orderId = args?['orderId'] as String? ?? 'unknown_order_id';
+            return MaterialPageRoute(
+              builder: (context) => OrderTrackerPage(orderId: orderId),
             );
           }
           return null;
         },
       ),
     );
+  }
+}
+
+class OrderConfirmationLoadingPage extends StatelessWidget {
+  final String chapaTxRef;
+
+  const OrderConfirmationLoadingPage({super.key, required this.chapaTxRef});
+
+  Future<Map<String, dynamic>> _getOrderDetails() async {
+    final prefs = await SharedPreferences.getInstance();
+    final orderData = prefs.getString('pending_order');
+    if (orderData == null) {
+      debugPrint('No pending order data found in SharedPreferences');
+      return {'totalAmount': 0.0, 'deliveryAddress': 'Unknown Address'};
+    }
+    return jsonDecode(orderData) as Map<String, dynamic>;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<OrderBloc, OrderState>(
+      listener: (context, state) {
+        if (state is OrderCreated) {
+          debugPrint('OrderCreated state received, navigating to confirmation with orderId: ${state.orderId}');
+          _navigateToConfirmation(context, state.orderId);
+        } else if (state is OrderError) {
+          debugPrint('OrderError state received: ${state.message}');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to create order: ${state.message}')),
+            );
+            Navigator.pop(context);
+          });
+        }
+      },
+      child: Scaffold(
+        body: FutureBuilder<Map<String, dynamic>>(
+          future: _getOrderDetails(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              debugPrint('Error fetching order details: ${snapshot.error}');
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+            final orderDetails = snapshot.data!;
+            final txRef = orderDetails['txRef'] as String? ?? 'unknown_tx_ref';
+            final totalAmount = orderDetails['totalAmount'] as double? ?? 0.0;
+            final deliveryAddress = orderDetails['deliveryAddress']?.toString() ?? 'Unknown Address';
+            final customerId = '67f3ddb5d84269b6463c0ede';
+            final restaurantId = '681322cb7a5591e3a40ee78d';
+            final cartItems = (orderDetails['cartItems'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+            final latitude = orderDetails['latitude'] as double? ?? 38.74;
+            final longitude = orderDetails['longtiude'] as double? ?? 9.03;
+
+            if (txRef.startsWith('eshi-tap-tx-')) {
+              debugPrint('Initiating order creation with txRef: $txRef, chapaTxRef: $chapaTxRef');
+              context.read<OrderBloc>().add(CreateOrderEvent(
+                restaurantId: restaurantId,
+                customerId: customerId,
+                items: cartItems,
+                orderStatus: 'delivered',
+                totalAmount: totalAmount,
+                latitude: latitude,
+                longitude: longitude,
+              ));
+            } else {
+              debugPrint('Invalid transaction reference in SharedPreferences: $txRef');
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Invalid transaction reference')),
+                );
+                Navigator.pop(context);
+              });
+            }
+
+            return const Center(child: CircularProgressIndicator());
+          },
+        ),
+      ),
+    );
+  }
+
+  void _navigateToConfirmation(BuildContext context, String orderId) {
+    _getOrderDetails().then((orderDetails) {
+      final totalAmount = orderDetails['totalAmount'] as double? ?? 0.0;
+      final deliveryAddress = orderDetails['deliveryAddress']?.toString() ?? 'Unknown Address';
+      debugPrint('Navigating to OrderConfirmationPage with orderId: $orderId, totalAmount: $totalAmount, deliveryAddress: $deliveryAddress');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OrderConfirmationPage(
+            orderId: orderId,
+            totalAmount: totalAmount,
+            deliveryAddress: deliveryAddress,
+          ),
+        ),
+      );
+    }).catchError((error) {
+      debugPrint('Error during navigation setup: $error');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Navigation error: $error')),
+        );
+        Navigator.pop(context);
+      });
+    });
   }
 }
 

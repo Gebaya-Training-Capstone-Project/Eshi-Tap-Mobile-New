@@ -46,9 +46,9 @@ class _SplashPageState extends State<SplashPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(
-                'assets/logo.png',
-                width: 250,
-                height: 200,
+                'assets/logo3.png',
+                width: 300,
+                height: 300,
               ),
               const SizedBox(height: 20),
               const CircularProgressIndicator(

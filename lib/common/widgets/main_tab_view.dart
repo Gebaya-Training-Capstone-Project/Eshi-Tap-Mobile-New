@@ -1,6 +1,7 @@
+import 'dart:convert';
+import 'package:eshi_tap/core/configs/theme/color_extensions.dart' as theme;
 import 'package:eshi_tap/core/configs/theme/color_extensions.dart';
 import 'package:eshi_tap/features/Auth/presentation/auth/pages/profile_page.dart';
-
 import 'package:eshi_tap/features/Restuarant/domain/entity/meal.dart';
 import 'package:eshi_tap/features/Restuarant/domain/entity/restaurant.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/favorites_page.dart';
@@ -8,8 +9,7 @@ import 'package:eshi_tap/features/Restuarant/presentation/home_page.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/menu_page.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/bloc/restaurant_bloc.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/bloc/meal_bloc.dart';
-import 'package:eshi_tap/features/Restuarant/presentation/order_list_page.dart';
-import 'package:eshi_tap/features/Restuarant/presentation/order_tracker_page.dart' as order_tracker;
+import 'package:eshi_tap/features/Restuarant/presentation/order_tracker_page.dart';
 import 'package:eshi_tap/injection_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,21 +29,46 @@ class _MainTabViewState extends State<MainTabView> {
   Widget? selectPageView;
   List<Restaurant> allRestaurants = [];
   List<Meal> allMeals = [];
-  String? recentOrderId; // Store the most recent order ID
+  List<Map<String, dynamic>> _orders = [];
+  String? recentOrderId;
 
   @override
   void initState() {
     super.initState();
-    // Initialize selectPageView to HomePage immediately
     selectPageView = const HomePage();
-    // Fetch the most recent order ID
+    _loadOrders();
     _fetchRecentOrderId();
+  }
+
+  Future<void> _loadOrders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final orderData = prefs.getString('orders');
+    setState(() {
+      _orders = orderData != null ? List<Map<String, dynamic>>.from(jsonDecode(orderData)) : [];
+    });
   }
 
   Future<void> _fetchRecentOrderId() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       recentOrderId = prefs.getString('recent_order_id');
+    });
+  }
+
+  Future<void> _addOrder(String orderId, String restaurantName, double totalAmount) async {
+    final prefs = await SharedPreferences.getInstance();
+    final newOrder = {
+      'orderId': orderId,
+      'restaurantName': restaurantName,
+      'totalAmount': totalAmount,
+      'orderStatus': 'preparing',
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+    _orders.insert(0, newOrder);
+    await prefs.setString('orders', jsonEncode(_orders));
+    await prefs.setString('recent_order_id', orderId);
+    setState(() {
+      selectPageView = _buildOrderTrackerView();
     });
   }
 
@@ -85,7 +110,6 @@ class _MainTabViewState extends State<MainTabView> {
         ],
         child: Builder(
           builder: (context) {
-            // Show a loading indicator until data is fetched
             if (selectPageView == null) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
@@ -95,8 +119,7 @@ class _MainTabViewState extends State<MainTabView> {
             return Scaffold(
               body: PageStorage(bucket: storageBucket, child: selectPageView!),
               backgroundColor: const Color(0xfff5f5f5),
-              floatingActionButtonLocation:
-                  FloatingActionButtonLocation.miniCenterDocked,
+              floatingActionButtonLocation: FloatingActionButtonLocation.miniCenterDocked,
               floatingActionButton: SizedBox(
                 width: 60,
                 height: 60,
@@ -111,9 +134,7 @@ class _MainTabViewState extends State<MainTabView> {
                     }
                   },
                   shape: const CircleBorder(),
-                  backgroundColor: selctTab == 2
-                      ? AppColor.primaryColor
-                      : AppColor.placeholder,
+                  backgroundColor: selctTab == 2 ? theme.AppColor.primaryColor : theme.AppColor.placeholder,
                   child: const Icon(Icons.home, color: Colors.white, size: 30),
                 ),
               ),
@@ -166,7 +187,7 @@ class _MainTabViewState extends State<MainTabView> {
                         onTap: () {
                           if (selctTab != 3) {
                             selctTab = 3;
-                            selectPageView = const OrderListPage();
+                            selectPageView = _buildOrderTrackerView();
                           }
                           if (mounted) {
                             setState(() {});
@@ -197,5 +218,12 @@ class _MainTabViewState extends State<MainTabView> {
         ),
       ),
     );
+  }
+
+  Widget _buildOrderTrackerView() {
+    if (recentOrderId == null || _orders.isEmpty) {
+      return const OrderTrackerPage(orderId: 'placeholder', isInitial: true);
+    }
+    return OrderTrackerPage(orderId: recentOrderId!);
   }
 }

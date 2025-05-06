@@ -13,6 +13,7 @@ class Order extends Equatable {
   final String createdAt;
   final String updatedAt;
   final String? deliveryAddress;
+  final Driver? driver;
 
   const Order({
     required this.id,
@@ -26,6 +27,7 @@ class Order extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     this.deliveryAddress,
+    this.driver,
   });
 
   @override
@@ -41,6 +43,7 @@ class Order extends Equatable {
         createdAt,
         updatedAt,
         deliveryAddress,
+        driver,
       ];
 }
 
@@ -59,4 +62,35 @@ class OrderItem extends Equatable {
 
   @override
   List<Object?> get props => [itemId, quantity, price, id];
+}
+
+class Driver extends Equatable {
+  final String id;
+  final String username;
+  final String? phone;
+
+  const Driver({
+    required this.id,
+    required this.username,
+    this.phone,
+  });
+
+  factory Driver.fromJson(Map<String, dynamic> json) {
+    return Driver(
+      id: json['_id'] as String,
+      username: json['username'] as String,
+      phone: json['phone'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'username': username,
+      'phone': phone,
+    };
+  }
+
+  @override
+  List<Object?> get props => [id, username, phone];
 }

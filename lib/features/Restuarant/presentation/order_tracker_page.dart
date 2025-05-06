@@ -1,264 +1,249 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
-import 'package:eshi_tap/core/configs/theme/color_extensions.dart';
+import 'package:eshi_tap/common/widgets/main_tab_view.dart';
 import 'package:eshi_tap/features/Restuarant/presentation/bloc/order_bloc.dart';
-import 'package:eshi_tap/features/Restuarant/presentation/home_page.dart';
+import 'package:eshi_tap/features/Restuarant/presentation/order_details_page.dart';
+import 'package:eshi_tap/core/configs/theme/color_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:eshi_tap/features/Restuarant/presentation/order_details_page.dart';
-import 'package:eshi_tap/features/Restuarant/presentation/order_list_page.dart';
-import 'package:get_it/get_it.dart';
-
-final sl = GetIt.instance;
 
 class OrderTrackerPage extends StatefulWidget {
-  final String orderId; // This is the txRef from Chapa or actual order ID
+  final String orderId;
+  final bool isInitial;
 
-  const OrderTrackerPage({super.key, required this.orderId});
+  const OrderTrackerPage({super.key, required this.orderId, this.isInitial = false});
 
   @override
   State<OrderTrackerPage> createState() => _OrderTrackerPageState();
 }
 
 class _OrderTrackerPageState extends State<OrderTrackerPage> {
-  String? _orderId;
-  Timer? _pollingTimer;
-  LatLng _restaurantLocation = const LatLng(9.03, 38.74); // Default: Addis Ababa
-  LatLng _userLocation = const LatLng(9.04, 38.75); // Default user location
+  late StreamSubscription<Map<String, dynamic>> _orderUpdatesSubscription;
+  Map<String, dynamic>? _orderData;
+  bool _isLoading = false;
+  bool _hasError = false;
+  String _errorMessage = '';
+  String _simulatedStatus = 'preparing';
+  Timer? _statusTimer;
+  bool _isReceived = false;
 
   @override
   void initState() {
     super.initState();
-    if (widget.orderId.startsWith('eshi-tap-tx-')) {
-      _createOrder();
+    if (!widget.isInitial) {
+      _initializeOrderTracking();
+      _loadOrderStatus();
+      _simulateStatusProgression();
     } else {
-      _orderId = widget.orderId;
-      context.read<OrderBloc>().add(FetchOrderEvent(_orderId!));
+      setState(() => _isLoading = false);
     }
-    _startPolling();
   }
 
-  @override
-  void dispose() {
-    _pollingTimer?.cancel();
-    super.dispose();
+  void _initializeOrderTracking() {
+    setState(() => _isLoading = true);
+    context.read<OrderBloc>().add(FetchOrderEvent(widget.orderId));
+    context.read<OrderBloc>().add(StartOrderUpdates(widget.orderId));
+    
+    _orderUpdatesSubscription = context.read<OrderBloc>().orderUpdates.listen(
+      (orderData) {
+        if (mounted) {
+          setState(() {
+            _orderData = orderData;
+            _isLoading = false;
+            _simulatedStatus = orderData['orderStatus'] ?? _simulatedStatus;
+            if (orderData['driver'] != null && _simulatedStatus == 'preparing') {
+              _simulatedStatus = 'out-for-delivery';
+              _saveOrderStatus();
+            }
+          });
+        }
+      },
+      onError: (error) {
+        if (mounted) {
+          setState(() {
+            _hasError = true;
+            _errorMessage = error.toString();
+            _isLoading = false;
+          });
+        }
+      },
+    );
   }
 
-  void _startPolling() {
-    _pollingTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (_orderId != null) {
-        context.read<OrderBloc>().add(FetchOrderEvent(_orderId!));
+  Future<void> _loadOrderStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final storedStatus = prefs.getString('order_${widget.orderId}_status');
+    final isReceived = prefs.getBool('order_${widget.orderId}_received') ?? false;
+    if (storedStatus != null) {
+      setState(() {
+        _simulatedStatus = storedStatus;
+        _isReceived = isReceived;
+      });
+    }
+  }
+
+  Future<void> _saveOrderStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('order_${widget.orderId}_status', _simulatedStatus);
+    await prefs.setBool('order_${widget.orderId}_received', _isReceived);
+  }
+
+  void _simulateStatusProgression() {
+    if (_isReceived || widget.isInitial) return;
+    _statusTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted && _simulatedStatus == 'preparing' && _orderData?['driver'] == null) {
+        setState(() {
+          _orderData?['driver'] = {
+            'name': 'John Doe',
+            'rating': 4.5,
+            'phone': '+251912345678',
+            'eta': '15 mins',
+          };
+          _simulatedStatus = 'out-for-delivery';
+        });
+        _saveOrderStatus();
       }
     });
   }
 
-  Future<void> _createOrder() async {
-    final prefs = await SharedPreferences.getInstance();
-    final orderData = prefs.getString('pending_order');
-    if (orderData == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Order details not found')),
-      );
-      return;
-    }
+  void _markAsReceived() {
+    setState(() {
+      _isReceived = true;
+      _simulatedStatus = 'received';
+    });
+    _saveOrderStatus();
 
-    final orderDetails = jsonDecode(orderData) as Map<String, dynamic>;
-    final customerId = orderDetails['customerId'] as String?;
-    final restaurantId = orderDetails['restaurantId'] as String?;
-    final cartItems = (orderDetails['cartItems'] as List?)?.cast<Map<String, dynamic>>();
-    final totalAmount = orderDetails['totalAmount'] as double?;
-    final orderStatus = orderDetails['orderStatus'] as String?;
-    final txRef = orderDetails['txRef'] as String?;
-    final deliveryAddress = orderDetails['deliveryAddress'] as String?;
-    final phoneNumber = orderDetails['phoneNumber'] as String?;
-
-    if (restaurantId == null ||
-        customerId == null ||
-        cartItems == null ||
-        totalAmount == null ||
-        orderStatus == null ||
-        txRef == null ||
-        deliveryAddress == null ||
-        phoneNumber == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Missing required order details')),
-      );
-      return;
-    }
-
-    if (txRef != widget.orderId) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Transaction reference mismatch')),
-      );
-      return;
-    }
-
-    context.read<OrderBloc>().add(CreateOrderEvent(
-      restaurantId: restaurantId,
-      customerId: customerId,
-      items: cartItems,
-      orderStatus: orderStatus,
-      totalAmount: totalAmount,
-      deliveryAddress: deliveryAddress,
-      phoneNumber: phoneNumber,
-      txRef: txRef,
-    ));
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Order Received!'),
+        content: const Text('Enjoy your meal!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: Colors.green)),
+          ),
+        ],
+      ),
+    );
   }
 
-  Future<void> _cancelOrder(String orderStatus) async {
-    if (orderStatus.toLowerCase() == 'delivered') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cannot cancel a delivered order')),
-      );
-      return;
-    }
-
+  Future<void> _cancelOrder() async {
+    if (!mounted || widget.isInitial) return;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token') ?? '';
-      if (token.isEmpty) {
-        throw Exception('User not authenticated. Please log in again.');
-      }
-
-      final dio = sl<Dio>(); // Access Dio via GetIt
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3ZjNkZGI1ZDg0MjY5YjY0NjNjMGVkZSIsInJvbGUiOiJjdXN0b21lciIsImVtYWlsIjoibmViaW1vYmlsZUBnbWFpbC5jb20iLCJpYXQiOjE3NDYxMTk2MDAsImV4cCI6MTc0ODcxMTYwMH0.POQyG_yEWzRYzTnru_5FELM7reHdqBqCyxNNpFZwC6A';
+      final dio = Dio();
       const baseUrl = 'https://eshi-tap.vercel.app/api';
       final response = await dio.patch(
-        '$baseUrl/order/$_orderId/cancel',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-          },
-        ),
+        '$baseUrl/order/${widget.orderId}/cancel',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
       if (response.statusCode == 201) {
-        context.read<OrderBloc>().add(FetchOrderEvent(_orderId!));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Order cancelled successfully')),
-        );
+        context.read<OrderBloc>().add(StopOrderUpdates());
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Order cancelled successfully')),
+          );
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const MainTabView()),
+            (route) => false,
+          );
+        }
       } else {
         throw Exception('Failed to cancel order: ${response.data['message']}');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error cancelling order: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error cancelling order: $e')),
+        );
+      }
     }
   }
 
   @override
+  void dispose() {
+    if (!widget.isInitial) {
+      _orderUpdatesSubscription.cancel();
+      context.read<OrderBloc>().add(StopOrderUpdates());
+      _statusTimer?.cancel();
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (widget.isInitial) {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.green,
+          title: const Text('Track Your Order', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+        ),
+        body: Center(
+          child: Card(
+            elevation: 5,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.info, color: Colors.green, size: 50),
+                  SizedBox(height: 16),
+                  Text('No active order', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 8),
+                  Text('Place an order to start tracking!', style: TextStyle(fontSize: 16)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return BlocConsumer<OrderBloc, OrderState>(
-      listener: (context, state) async {
-        if (state is OrderCreated) {
+      listener: (context, state) {
+        if (state is OrderError) {
           setState(() {
-            _orderId = state.order.id;
-            _restaurantLocation = LatLng(
-              state.order.restaurant.latitude,
-              state.order.restaurant.longitude,
-            );
-            final deliveryAddress = state.order.deliveryAddress;
-            if (deliveryAddress != null && deliveryAddress.startsWith('Location: (')) {
-              final coords = deliveryAddress
-                  .replaceAll('Location: (', '')
-                  .replaceAll(')', '')
-                  .split(', ');
-              _userLocation = LatLng(
-                double.parse(coords[0]),
-                double.parse(coords[1]),
-              );
-            }
+            _hasError = true;
+            _errorMessage = state.message;
+            _isLoading = false;
           });
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('recent_order_id', _orderId!);
-          await prefs.remove('pending_order');
         } else if (state is OrderLoaded) {
           setState(() {
-            _orderId = state.order.id;
-            _restaurantLocation = LatLng(
-              state.order.restaurant.latitude,
-              state.order.restaurant.longitude,
-            );
-            final deliveryAddress = state.order.deliveryAddress;
-            if (deliveryAddress != null && deliveryAddress.startsWith('Location: (')) {
-              final coords = deliveryAddress
-                  .replaceAll('Location: (', '')
-                  .replaceAll(')', '')
-                  .split(', ');
-              _userLocation = LatLng(
-                double.parse(coords[0]),
-                double.parse(coords[1]),
-              );
+            _orderData = state.order;
+            _isLoading = false;
+            _simulatedStatus = state.order['orderStatus'] ?? _simulatedStatus;
+            if (state.order['driver'] != null && _simulatedStatus == 'preparing') {
+              _simulatedStatus = 'out-for-delivery';
+              _saveOrderStatus();
             }
           });
         }
       },
       builder: (context, state) {
-        if (_orderId == null && state is! OrderCreated && state is! OrderLoaded) {
-          return Scaffold(
-            appBar: AppBar(
-              backgroundColor: Colors.white,
-              title: const Text(
-                'Track Order',
-                style: TextStyle(color: Colors.black),
-              ),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
-                onPressed: () => Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
-                  (route) => false,
-                ),
-              ),
-            ),
-            body: const Center(
-              child: Text(
-                'No active orders to track.',
-                style: TextStyle(fontSize: 18, color: Colors.black54),
-              ),
-            ),
+        if (_isLoading) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator(color: Colors.green)),
           );
         }
 
-        if (state is OrderLoading) {
+        if (_hasError) {
           return Scaffold(
             appBar: AppBar(
-              backgroundColor: Colors.white,
-              title: const Text(
-                'Track Order',
-                style: TextStyle(color: Colors.black),
-              ),
+              title: const Text('Track Order', style: TextStyle(color: Colors.white)),
+              backgroundColor: Colors.green,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: () => Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
-                  (route) => false,
-                ),
-              ),
-            ),
-            body: const Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (state is OrderError) {
-          return Scaffold(
-            appBar: AppBar(
-              backgroundColor: Colors.white,
-              title: const Text(
-                'Track Order',
-                style: TextStyle(color: Colors.black),
-              ),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
-                onPressed: () => Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
+                  MaterialPageRoute(builder: (context) => const MainTabView()),
                   (route) => false,
                 ),
               ),
@@ -267,21 +252,20 @@ class _OrderTrackerPageState extends State<OrderTrackerPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    state.message,
-                    style: const TextStyle(color: Colors.red, fontSize: 16),
-                    textAlign: TextAlign.center,
-                  ),
+                  const Icon(Icons.error, color: Colors.red, size: 48),
                   const SizedBox(height: 16),
+                  Text(_errorMessage, style: const TextStyle(fontSize: 18, color: Colors.black54)),
+                  const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () {
-                      if (widget.orderId.startsWith('eshi-tap-tx-')) {
-                        _createOrder();
-                      } else {
-                        context.read<OrderBloc>().add(FetchOrderEvent(_orderId!));
-                      }
+                      setState(() {
+                        _isLoading = true;
+                        _hasError = false;
+                      });
+                      _initializeOrderTracking();
                     },
-                    child: const Text('Retry'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                    child: const Text('Retry', style: TextStyle(color: Colors.white)),
                   ),
                 ],
               ),
@@ -289,349 +273,342 @@ class _OrderTrackerPageState extends State<OrderTrackerPage> {
           );
         }
 
-        final order = (state is OrderCreated)
-            ? state.order
-            : (state is OrderLoaded)
-                ? state.order
-                : null;
+        final orderStatus = _simulatedStatus;
+        final driver = _orderData?['driver'] as Map<String, dynamic>?;
+        final restaurantLocation = _orderData?['restaurant'] != null 
+            ? const LatLng(9.03, 38.74)
+            : const LatLng(9.03, 38.74);
+        final userLocation = LatLng(
+          _orderData?['latitude'] ?? 9.022879507722104,
+          _orderData?['longitude'] ?? 38.7359659576416,
+        );
 
-        if (order == null) {
-          return Scaffold(
+        return WillPopScope(
+          onWillPop: () async {
+            context.read<OrderBloc>().add(StopOrderUpdates());
+            return true;
+          },
+          child: Scaffold(
             appBar: AppBar(
-              backgroundColor: Colors.white,
-              title: const Text(
-                'Track Order',
-                style: TextStyle(color: Colors.black),
-              ),
+              backgroundColor: Colors.green,
+              title: const Text('Track Your Order', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
-                onPressed: () => Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
-                  (route) => false,
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () {
+                  context.read<OrderBloc>().add(StopOrderUpdates());
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MainTabView()),
+                    (route) => false,
+                  );
+                },
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.cancel, color: Colors.white),
+                  onPressed: _cancelOrder,
                 ),
-              ),
+              ],
             ),
-            body: const Center(
-              child: Text(
-                'No active orders to track.',
-                style: TextStyle(fontSize: 18, color: Colors.black54),
-              ),
-            ),
-          );
-        }
-
-        return Scaffold(
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            title: const Text(
-              'Track Order',
-              style: TextStyle(color: Colors.black),
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black),
-              onPressed: () => Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => HomePage()),
-                (route) => false,
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Container(
+                    height: 300,
+                    decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade200))),
+                    child: FlutterMap(
+                      options: MapOptions(center: restaurantLocation, zoom: 13.0),
+                      children: [
+                        TileLayer(urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', subdomains: const ['a', 'b', 'c']),
+                        MarkerLayer(markers: [
+                          Marker(point: restaurantLocation, width: 40, height: 40, builder: (ctx) => const Icon(Icons.restaurant, color: Colors.red, size: 40)),
+                          Marker(point: userLocation, width: 40, height: 40, builder: (ctx) => const Icon(Icons.person_pin_circle, color: Colors.green, size: 40)),
+                          if (driver != null) Marker(point: userLocation, width: 40, height: 40, builder: (ctx) => const Icon(Icons.delivery_dining, color: Colors.blue, size: 40)),
+                        ]),
+                        PolylineLayer(polylines: [
+                          if (driver != null) Polyline(points: [restaurantLocation, userLocation], strokeWidth: 4.0, color: Colors.green.withOpacity(0.7)),
+                        ]),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    color: Colors.white,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Order Status', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black)),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildStatusStep('Preparing', orderStatus == 'preparing'),
+                            _buildStatusStep('Out for Delivery', orderStatus == 'out-for-delivery'),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        if (!_isReceived) ...[
+                          const Text('Confirm Delivery', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+                          const SizedBox(height: 12),
+                          Slideto(
+                            onAccept: _markAsReceived,
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                        const Text('Delivery Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            CachedNetworkImage(
+                              imageUrl: 'https://via.placeholder.com/150',
+                              placeholder: (context, url) => const CircularProgressIndicator(),
+                              errorWidget: (context, url, error) => const Icon(Icons.person, size: 30, color: Colors.grey),
+                              imageBuilder: (context, imageProvider) => CircleAvatar(radius: 30, backgroundImage: imageProvider),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(driver != null ? 'Courier: ${driver['name'] ?? 'Unknown'}' : 'Awaiting driver...', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(children: [
+                                        const Icon(Icons.star, color: Colors.amber, size: 16),
+                                        const SizedBox(width: 4),
+                                        Text(driver?['rating']?.toString() ?? '0.0', style: const TextStyle(fontSize: 14, color: Colors.black54)),
+                                      ]),
+                                      Text(driver != null ? 'ETA: ${driver['eta'] ?? 'N/A'}' : 'N/A', style: const TextStyle(fontSize: 14, color: Colors.black54)),
+                                    ],
+                                  ),
+                                  if (driver != null && driver['phone'] != null)
+                                    Padding(padding: const EdgeInsets.only(top: 4), child: Text('Phone: ${driver['phone']}', style: const TextStyle(fontSize: 14, color: Colors.black54))),
+                                ],
+                              ),
+                            ),
+                            if (driver != null && driver['phone'] != null)
+                              Row(children: [
+                                IconButton(icon: const Icon(Icons.phone, color: Colors.green), onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Calling ${driver['phone']}')))),
+                                IconButton(icon: const Icon(Icons.message, color: Colors.green), onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Message courier - To be implemented')))),
+                              ]),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => OrderDetailsPage(orderId: widget.orderId)),
+                                ).then((_) {
+                                  setState(() {});
+                                  _initializeOrderTracking();
+                                }),
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.green, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                                child: const Text('Order Details', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: !_isReceived ? _cancelOrder : null,
+                                style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.green), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                                child: const Text('Cancel Order', style: TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          body: SingleChildScrollView(
-            child: Column(
+        );
+      },
+    );
+  }
+
+  Widget _buildStatusStep(String label, bool isActive) {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isActive ? Colors.green : Colors.grey.shade300,
+            ),
+            child: Icon(isActive ? Icons.check : Icons.circle, color: Colors.white, size: 18),
+          ),
+          const SizedBox(height: 8),
+          Text(label, textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: isActive ? Colors.black : Colors.black54, fontWeight: isActive ? FontWeight.bold : FontWeight.normal)),
+        ],
+      ),
+    );
+  }
+}
+
+class Slideto extends StatefulWidget {
+  final VoidCallback? onSlide;
+  final VoidCallback? onAccept;
+  final VoidCallback? onCancel;
+
+  const Slideto({
+    super.key,
+    this.onSlide,
+    this.onAccept,
+    this.onCancel,
+  });
+
+  @override
+  _SlidetoState createState() => _SlidetoState();
+}
+
+class _SlidetoState extends State<Slideto> {
+  double _dragPosition = 0.0;
+  double _maxDrag = 0.0; // Will be calculated dynamically
+  String _label = 'Slide to Confirm Received';
+  bool _accepted = false;
+  final double _sliderWidth = 56.0; // Width of the draggable circle
+  final GlobalKey _containerKey = GlobalKey(); // Key to get container size
+
+  @override
+  void initState() {
+    super.initState();
+    // Calculate _maxDrag after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _calculateMaxDrag();
+    });
+  }
+
+  void _calculateMaxDrag() {
+    final RenderBox? renderBox =
+        _containerKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final containerWidth = renderBox.size.width;
+      setState(() {
+        _maxDrag =
+            containerWidth - _sliderWidth; // Full width minus slider width
+      });
+    }
+  }
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    if (_accepted) return;
+
+    setState(() {
+      _dragPosition += details.delta.dx;
+      _dragPosition = _dragPosition.clamp(0.0, _maxDrag);
+
+      if (_dragPosition < _maxDrag) {
+        _label = 'Slide to Confirm Received';
+        widget.onSlide?.call();
+      }
+    });
+  }
+
+  void _onDragEnd(DragEndDetails details) {
+    if (_dragPosition >= _maxDrag) {
+      setState(() {
+        _label = 'Confirmed!';
+        _accepted = true;
+      });
+      widget.onAccept?.call();
+    } else {
+      setState(() {
+        _dragPosition = 0.0;
+        _label = 'Slide to Confirm Received';
+      });
+      widget.onCancel?.call();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: _containerKey,
+      height: 56,
+      decoration: BoxDecoration(
+        color: _accepted
+            ? AppColor.notificationColor.withOpacity(0.2)
+            : AppColor.secondoryBackgroundColor,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: _accepted
+              ? AppColor.notificationColor
+              : AppColor.subTextColor.withOpacity(0.2),
+        ),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          AnimatedOpacity(
+            opacity: _accepted ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(
-                  height: 300,
-                  child: FlutterMap(
-                    options: MapOptions(
-                      center: _restaurantLocation,
-                      zoom: 13.0,
-                    ),
-                    children: [
-                      TileLayer(
-                        urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        subdomains: ['a', 'b', 'c'],
-                      ),
-                      MarkerLayer(
-                        markers: [
-                          Marker(
-                            point: _restaurantLocation,
-                            width: 40,
-                            height: 40,
-                            builder: (context) => const Icon(
-                              Icons.restaurant,
-                              color: Colors.red,
-                              size: 40,
-                            ),
-                          ),
-                          Marker(
-                            point: _userLocation,
-                            width: 40,
-                            height: 40,
-                            builder: (context) => const Icon(
-                              Icons.person_pin_circle,
-                              color: Colors.blue,
-                              size: 40,
-                            ),
-                          ),
-                        ],
-                      ),
-                      PolylineLayer(
-                        polylines: [
-                          Polyline(
-                            points: [_restaurantLocation, _userLocation],
-                            strokeWidth: 4.0,
-                            color: Colors.green,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16.0),
-                  color: Colors.white,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'YOUR CURRENT ORDER',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  order.orderStatus.toLowerCase() == 'pending' ||
-                                          order.orderStatus.toLowerCase() == 'confirmed'
-                                      ? Icons.check_circle
-                                      : Icons.lock,
-                                  color: order.orderStatus.toLowerCase() == 'pending' ||
-                                          order.orderStatus.toLowerCase() == 'confirmed'
-                                      ? Colors.green
-                                      : Colors.grey,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Order Confirmed',
-                                  style: TextStyle(fontSize: 14, color: Colors.black54),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(width: 16),
-                            Row(
-                              children: [
-                                Container(
-                                  width: 20,
-                                  height: 20,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: order.orderStatus.toLowerCase() == 'preparing'
-                                        ? Colors.green
-                                        : Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Preparing',
-                                  style: TextStyle(fontSize: 14, color: Colors.black54),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(width: 16),
-                            Row(
-                              children: [
-                                Icon(
-                                  order.orderStatus.toLowerCase() == 'delivered'
-                                      ? Icons.check_circle
-                                      : Icons.lock,
-                                  color: order.orderStatus.toLowerCase() == 'delivered'
-                                      ? Colors.green
-                                      : Colors.grey,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Delivered',
-                                  style: TextStyle(fontSize: 14, color: Colors.black54),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            CachedNetworkImage(
-                              imageUrl: order.driverId != null
-                                  ? 'https://res.cloudinary.com/du9pkirsy/image/upload/v1744364230/eshi-tap/driver_${order.driverId}.png'
-                                  : 'https://via.placeholder.com/150',
-                              placeholder: (context, url) => const CircularProgressIndicator(),
-                              errorWidget: (context, url, error) => const Icon(
-                                Icons.person,
-                                size: 30,
-                                color: Colors.grey,
-                              ),
-                              imageBuilder: (context, imageProvider) => CircleAvatar(
-                                radius: 30,
-                                backgroundImage: imageProvider,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Courier: ${order.driverId != null ? 'Assigned' : '[Name Unavailable]'}',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.star, color: Colors.green, size: 16),
-                                    const SizedBox(width: 4),
-                                    const Text('[Rating Unavailable]'),
-                                    const SizedBox(width: 16),
-                                    const Text('ETA: [ETA Unavailable]'),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(width: 16),
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.phone, color: Colors.green),
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text('Call courier - To be implemented')),
-                                    );
-                                  },
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.message, color: Colors.green),
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text('Message courier - To be implemented')),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => OrderDetailsPage(
-                                      orderId: _orderId!,
-                                    ),
-                                  ),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColor.primaryColor,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text(
-                                'Order Details',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: order.orderStatus.toLowerCase() != 'delivered' &&
-                                      order.orderStatus.toLowerCase() != 'cancelled'
-                                  ? () => _cancelOrder(order.orderStatus)
-                                  : null,
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.green),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text(
-                                'Cancel Order',
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const OrderListPage(),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColor.primaryColor,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'View Order History',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                Icon(Icons.check_circle, color: AppColor.notificationColor),
+                const SizedBox(width: 8),
+                Text(
+                  _label,
+                  style: TextStyle(
+                    color: AppColor.notificationColor,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
           ),
-        );
-      },
+          AnimatedOpacity(
+            opacity: _accepted ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 200),
+            child: Center(
+              child: Text(
+                _label,
+                style: TextStyle(
+                  color: AppColor.subTextColor2,
+                ),
+              ),
+            ),
+          ),
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 100),
+            left: _dragPosition,
+            child: GestureDetector(
+              onHorizontalDragUpdate: _onDragUpdate,
+              onHorizontalDragEnd: _onDragEnd,
+              child: Container(
+                width: _sliderWidth,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: _accepted
+                      ? AppColor.notificationColor
+                      : AppColor.primaryColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  _accepted ? Icons.check : Icons.arrow_forward,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

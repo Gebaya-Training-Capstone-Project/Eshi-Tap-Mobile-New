@@ -94,6 +94,7 @@ flutter:
     - assets/logo.png
     - assets/google_logo.png
     - assets/logo2.png
+    - assets/logo3.png
     - assets/restuarant.png
     - assets/burger.png
     - assets/animation/delivery_animation1.json

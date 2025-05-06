@@ -49,7 +49,7 @@ class _SigninPageState extends State<SigninPage> {
                   color: AppColor.primaryColor, // Green header background
                   child: Center(
                     child: Image.asset(
-                      'assets/logo2.png',
+                      'assets/logo3.png',
                       height: 80,
                     ),
                   ),

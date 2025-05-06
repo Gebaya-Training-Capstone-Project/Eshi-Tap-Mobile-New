@@ -43,7 +43,6 @@ Future<void> init() async {
       ),
     );
 
-    // Optional: Add interceptors for logging
     dio.interceptors.add(LogInterceptor(
       requestBody: true,
       responseBody: true,
@@ -89,7 +88,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => LogoutUser(sl()));
   sl.registerLazySingleton(() => GetRestaurants(sl()));
   sl.registerLazySingleton(() => GetAllMeals(sl()));
-  sl.registerLazySingleton(() => CreateOrder(sl()));
+  sl.registerLazySingleton(() => CreateOrder());
   sl.registerLazySingleton(() => GetOrderById(sl()));
 
   // Blocs
@@ -101,5 +100,5 @@ Future<void> init() async {
       ));
   sl.registerFactory(() => RestaurantBloc(sl()));
   sl.registerFactory(() => MealBloc(sl()));
-  sl.registerFactory(() => OrderBloc(sl(), sl()));
+  sl.registerFactory(() => OrderBloc(dio: sl()));
 }

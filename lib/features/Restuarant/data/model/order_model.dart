@@ -14,6 +14,7 @@ class OrderModel extends Order {
     required String createdAt,
     required String updatedAt,
     String? deliveryAddress,
+    Driver? driver,
   }) : super(
           id: id,
           restaurant: restaurant,
@@ -26,6 +27,7 @@ class OrderModel extends Order {
           createdAt: createdAt,
           updatedAt: updatedAt,
           deliveryAddress: deliveryAddress,
+          driver: driver,
         );
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -43,6 +45,9 @@ class OrderModel extends Order {
       createdAt: json['createdAt'] as String,
       updatedAt: json['updatedAt'] as String,
       deliveryAddress: json['deliveryAddress'] as String?,
+      driver: json['driver'] != null
+          ? Driver.fromJson(json['driver'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -59,6 +64,7 @@ class OrderModel extends Order {
       'createdAt': createdAt,
       'updatedAt': updatedAt,
       'deliveryAddress': deliveryAddress,
+      'driver': driver?.toJson(),
     };
   }
 }

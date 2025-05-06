@@ -14,8 +14,8 @@ class RestaurantDetailsPage extends StatefulWidget {
 }
 
 class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
-  String selectedCategory = 'All'; // Default category
-  bool isFavorite = false; // Track if the restaurant is favorited
+  String selectedCategory = 'All';
+  bool isFavorite = false;
 
   @override
   void initState() {
@@ -23,19 +23,19 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
     _checkIfFavorite();
   }
 
-  // Check if the restaurant is in favorites
   Future<void> _checkIfFavorite() async {
     final prefs = await SharedPreferences.getInstance();
-    final favoriteRestaurantIds = prefs.getStringList('favorite_restaurants') ?? [];
+    final favoriteRestaurantIds =
+        prefs.getStringList('favorite_restaurants') ?? [];
     setState(() {
       isFavorite = favoriteRestaurantIds.contains(widget.restaurant.id);
     });
   }
 
-  // Toggle the favorite status of the restaurant
   Future<void> _toggleFavorite() async {
     final prefs = await SharedPreferences.getInstance();
-    List<String> favoriteRestaurantIds = prefs.getStringList('favorite_restaurants') ?? [];
+    List<String> favoriteRestaurantIds =
+        prefs.getStringList('favorite_restaurants') ?? [];
 
     if (isFavorite) {
       favoriteRestaurantIds.remove(widget.restaurant.id);
@@ -66,7 +66,6 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
       orElse: () => widget.restaurant.restaurantImages.first,
     );
 
-    // Extract unique categories from meals
     final categories = <String>['All'] +
         (widget.restaurant.meals
                 ?.map((meal) => meal.categories ?? [])
@@ -75,287 +74,344 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                 .toList() as List<String> ??
             []);
 
-    // Filter meals based on selected category
     final filteredMeals = selectedCategory == 'All'
-        ? widget.restaurant.meals?.where((meal) => meal.availability).toList() ?? []
+        ? widget.restaurant.meals
+                ?.where((meal) => meal.availability)
+                .toList() ??
+            []
         : widget.restaurant.meals
                 ?.where((meal) =>
-                    meal.availability && (meal.categories ?? []).contains(selectedCategory))
+                    meal.availability &&
+                    (meal.categories ?? []).contains(selectedCategory))
                 .toList() ??
             [];
 
-    // Calculate average estimated delivery time from meals
-    final averageDeliveryTime = widget.restaurant.meals != null &&
-            widget.restaurant.meals!.isNotEmpty
-        ? widget.restaurant.meals!
-                .where((meal) => meal.estimatedDeliveryTime != null)
-                .map((meal) => meal.estimatedDeliveryTime!)
-                .fold(0, (sum, time) => sum + time) /
-            widget.restaurant.meals!
-                .where((meal) => meal.estimatedDeliveryTime != null)
-                .length
-        : 0;
+    final averageDeliveryTime =
+        widget.restaurant.meals != null && widget.restaurant.meals!.isNotEmpty
+            ? widget.restaurant.meals!
+                    .where((meal) => meal.estimatedDeliveryTime != null)
+                    .map((meal) => meal.estimatedDeliveryTime!)
+                    .fold(0, (sum, time) => sum + time) /
+                widget.restaurant.meals!
+                    .where((meal) => meal.estimatedDeliveryTime != null)
+                    .length
+            : 0;
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 200,
-            floating: false,
-            pinned: true,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-            actions: [
-              IconButton(
-                icon: Icon(
-                  isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: Colors.white,
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 200,
+              floating: false,
+              pinned: true,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+              actions: [
+                IconButton(
+                  icon: Icon(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: Colors.white,
+                  ),
+                  onPressed: _toggleFavorite,
                 ),
-                onPressed: _toggleFavorite,
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: Hero(
-                tag: 'restaurant-image-${widget.restaurant.id}',
-                child: Image.network(
-                  defaultImage.secureUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                background: Hero(
+                  tag: 'restaurant-image-${widget.restaurant.id}',
+                  child: Image.network(
+                    defaultImage.secureUrl,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Colors.grey[300],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.error, size: 50),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Restaurant Name
-                  Text(
-                    widget.restaurant.restaurantName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      color: AppColor.primaryTextColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Rating, Delivery Fee, Estimated Delivery Time
-                  Row(
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.star,
-                            color: AppColor.secondoryColor,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            widget.restaurant.meals != null &&
-                                    widget.restaurant.meals!.isNotEmpty
-                                ? (widget.restaurant.meals!
-                                            .map((meal) => meal.ratings?.average ?? 0)
-                                            .reduce((a, b) => a + b) /
-                                        widget.restaurant.meals!.length)
-                                    .toStringAsFixed(1)
-                                : 'N/A',
-                            style: TextStyle(
-                              color: AppColor.secondoryColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.restaurant.restaurantName,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: AppColor.primaryTextColor,
                       ),
-                      const SizedBox(width: 12),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.delivery_dining,
-                            color: AppColor.secondoryColor,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            '80 birr', // Hardcoded until backend provides deliveryFee
-                            style: TextStyle(
-                              color: AppColor.secondoryColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            color: AppColor.secondoryColor,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            averageDeliveryTime > 0
-                                ? '${averageDeliveryTime.round()} min'
-                                : 'N/A',
-                            style: TextStyle(
-                              color: AppColor.secondoryColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  // Description
-                  Text(
-                    widget.restaurant.description.length > 100
-                        ? '${widget.restaurant.description.substring(0, 100)}...'
-                        : widget.restaurant.description,
-                    style: TextStyle(
-                      color: AppColor.subTextColor,
-                      fontSize: 14,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Category Tabs
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: categories.map((category) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: ChoiceChip(
-                            label: Text(category),
-                            selected: selectedCategory == category,
-                            onSelected: (selected) {
-                              setState(() {
-                                selectedCategory = category;
-                              });
-                            },
-                            selectedColor: AppColor.primaryColor,
-                            labelStyle: TextStyle(
-                              color: selectedCategory == category
-                                  ? Colors.white
-                                  : AppColor.primaryTextColor,
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.star,
+                              color: AppColor.secondoryColor,
+                              size: 16,
                             ),
-                          ),
-                        );
-                      }).toList(),
+                            const SizedBox(width: 2),
+                            Text(
+                              widget.restaurant.meals != null &&
+                                      widget.restaurant.meals!.isNotEmpty
+                                  ? (widget.restaurant.meals!
+                                              .map((meal) =>
+                                                  meal.ratings?.average ?? 0)
+                                              .reduce((a, b) => a + b) /
+                                          widget.restaurant.meals!.length)
+                                      .toStringAsFixed(1)
+                                  : 'N/A',
+                              style: TextStyle(
+                                color: AppColor.secondoryColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 12),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.delivery_dining,
+                              color: AppColor.secondoryColor,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              '80 birr',
+                              style: TextStyle(
+                                color: AppColor.secondoryColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 12),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time,
+                              color: AppColor.secondoryColor,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              averageDeliveryTime > 0
+                                  ? '${averageDeliveryTime.round()} min'
+                                  : 'N/A',
+                              style: TextStyle(
+                                color: AppColor.secondoryColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 60,
+                      child: SingleChildScrollView(
+                        child: Text(
+                          widget.restaurant.description,
+                          style: TextStyle(
+                            color: AppColor.subTextColor,
+                            fontSize: 14,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: categories.map((category) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: ChoiceChip(
+                              label: Text(category),
+                              selected: selectedCategory == category,
+                              onSelected: (selected) {
+                                setState(() {
+                                  selectedCategory = category;
+                                });
+                              },
+                              selectedColor: AppColor.primaryColor,
+                              labelStyle: TextStyle(
+                                color: selectedCategory == category
+                                    ? Colors.white
+                                    : AppColor.primaryTextColor,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '$selectedCategory (${filteredMeals.length})',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppColor.primaryTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (filteredMeals.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 16.0),
+                        child: Text('No meals available in this category'),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
-          // Meals Grid
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$selectedCategory (${filteredMeals.length})',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: AppColor.primaryTextColor,
-                    ),
+            if (filteredMeals.isNotEmpty)
+              SliverPadding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.75,
                   ),
-                  const SizedBox(height: 8),
-                  if (filteredMeals.isEmpty)
-                    const Text('No meals available in this category')
-                  else
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 0.9,
-                      ),
-                      itemCount: filteredMeals.length,
-                      itemBuilder: (context, index) {
-                        final meal = filteredMeals[index];
-                        final defaultImage = meal.images.firstWhere(
-                          (image) => image.defaultImage,
-                          orElse: () => meal.images.first,
-                        );
-                        return GestureDetector(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final meal = filteredMeals[index];
+                      final defaultImage = meal.images.firstWhere(
+                        (image) => image.defaultImage,
+                        orElse: () => meal.images.first,
+                      );
+                      return Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => MealDetailsPage(meal: meal),
+                                builder: (context) =>
+                                    MealDetailsPage(meal: meal),
                               ),
                             );
                           },
-                          child: Card(
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                          child: SizedBox(
+                            height: double.infinity,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Hero(
-                                  tag: 'meal-image-${meal.id}',
-                                  child: ClipRRect(
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(12),
-                                      topRight: Radius.circular(12),
-                                    ),
-                                    child: Image.network(
-                                      defaultImage.secureUrl,
-                                      width: double.infinity,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 120,
+                                    width: double.infinity,
+                                    child: ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(12),
+                                      ),
+                                      child: Hero(
+                                        tag: 'meal-image-${meal.id}',
+                                        child: Image.network(
+                                          defaultImage.secureUrl,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder:
+                                              (context, child, loadingProgress) {
+                                            if (loadingProgress == null)
+                                              return child;
+                                            return Container(
+                                              color: Colors.grey[200],
+                                              child: Center(
+                                                child: CircularProgressIndicator(
+                                                  value: loadingProgress
+                                                              .expectedTotalBytes !=
+                                                          null
+                                                      ? loadingProgress
+                                                              .cumulativeBytesLoaded /
+                                                          loadingProgress
+                                                              .expectedTotalBytes!
+                                                      : null,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                            color: Colors.grey[200],
+                                            child: const Center(
+                                              child:
+                                                  Icon(Icons.fastfood, size: 40),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         meal.name,
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 16,
+                                          fontSize: 14,
                                           color: AppColor.primaryTextColor,
                                         ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
                                         '${meal.price.toStringAsFixed(0)} ${meal.currency}',
                                         style: TextStyle(
                                           color: AppColor.subTextColor,
-                                          fontSize: 14,
+                                          fontSize: 12,
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
+                                      const SizedBox(height: 8),
                                       Align(
                                         alignment: Alignment.centerRight,
                                         child: IconButton(
                                           icon: Icon(
                                             Icons.add_circle,
                                             color: AppColor.primaryColor,
-                                            size: 30,
+                                            size: 24,
                                           ),
                                           onPressed: () {
-                                            // Add to cart functionality later
+                                            // Add to cart functionality
                                           },
                                         ),
                                       ),
@@ -365,14 +421,18 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                               ],
                             ),
                           ),
-                        );
-                      },
-                    ),
-                ],
+                        ),
+                      );
+                    },
+                    childCount: filteredMeals.length,
+                  ),
+                ),
               ),
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 16.0),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

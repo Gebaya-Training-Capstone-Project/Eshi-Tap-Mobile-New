@@ -99,7 +99,7 @@ class _SignupPageState extends State<SignupPage> {
                   color: AppColor.primaryColor, // Green header background
                   child: Center(
                     child: Image.asset(
-                      'assets/logo2.png',
+                      'assets/logo3.png',
                       height: 80,
                     ),
                   ),
